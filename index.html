@@ -1,0 +1,98 @@
+<!-- =============================
+Outlook Add-in: Snippet Inserter
+============================== -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Outlook Snippet Add-in</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f8f9fa;
+    }
+    h2 {
+      font-size: 18px;
+      margin-bottom: 1rem;
+    }
+    button {
+      display: block;
+      width: 100%;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      font-size: 14px;
+      border: none;
+      background: #0078d4;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+  </style>
+</head>
+<body>
+  <h2>📋 Insert Snippet</h2>
+  <div id="snippetList"></div>
+
+  <script>
+    const snippets = [
+      {
+        name: "🧪 Test Result Table",
+        html: `
+          <p><strong>Test Results</strong></p>
+          <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Test</th><th>Result</th><th>Notes</th></tr>
+            <tr><td>Ignition Off Delay</td><td>❌ FAIL</td><td>Only 2s, required 60min</td></tr>
+            <tr><td>ECO2 Power</td><td>❌ FAIL</td><td>0.146W (Limit: 0.048W)</td></tr>
+          </table>
+        `
+      },
+      {
+        name: "🏷️ Label Compliance",
+        html: `
+          <p><strong>Label Compliance Review</strong></p>
+          <ul>
+            <li>✔️ ITxPT label present and visible</li>
+            <li>❌ Version number missing</li>
+            <li>❌ ECO mode not indicated</li>
+          </ul>
+        `
+      },
+      {
+        name: "📦 Module Description",
+        html: `
+          <p><strong>Module Description:</strong></p>
+          <p>The device under test is a Managed Ethernet Switch designed for ITxPT deployments. It supports SNMP, ECO2 power modes, and MQTT event publishing for power states.</p>
+        `
+      }
+    ];
+
+    function insertHTML(html) {
+      Office.context.mailbox.item.body.setSelectedDataAsync(html, { coercionType: Office.CoercionType.Html }, function (asyncResult) {
+        if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
+          console.error(asyncResult.error.message);
+        }
+      });
+    }
+
+    function renderSnippets() {
+      const list = document.getElementById("snippetList");
+      snippets.forEach(snippet => {
+        const btn = document.createElement("button");
+        btn.textContent = snippet.name;
+        btn.onclick = () => insertHTML(snippet.html);
+        list.appendChild(btn);
+      });
+    }
+
+    Office.onReady(() => {
+      renderSnippets();
+    });
+  </script>
+</body>
+</html>
