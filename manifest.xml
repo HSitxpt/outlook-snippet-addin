@@ -1,41 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" 
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-           xsi:type="TaskPaneApp">
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:type="MailApp">
+
   <Id>c1a3e6e3-62d2-4cb5-bbc2-6b712c200abc</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Henrik’s Lab</ProviderName>
+  <ProviderName>Henrik's Lab</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Insert Snippet" />
-  <Description DefaultValue="Insert structured email snippets like test results, compliance checks, etc." />
 
-  <IconUrl DefaultValue="https://via.placeholder.com/64" />
-  <SupportUrl DefaultValue="https://localhost:3000/help" />
+  <DisplayName DefaultValue="Insert Snippet"/>
+  <Description DefaultValue="Insert structured email snippets like test results, compliance checks, etc."/>
+  <!-- Use a real 64x64 PNG you place in the repo -->
+  <IconUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/assets/icon-64.png"/>
+  <!-- Any public https help page in your repo -->
+  <SupportUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/help.html"/>
 
   <Hosts>
-    <Host Name="Mailbox" />
+    <Host Name="Mailbox"/>
   </Hosts>
 
   <Requirements>
     <Sets DefaultMinVersion="1.1">
-      <Set Name="Mailbox" />
+      <Set Name="Mailbox"/>
     </Sets>
   </Requirements>
 
+  <!-- Where your pages live. Must be public HTTPS. -->
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="http://localhost:3000/index.html" />
-        <RequestedHeight>300</RequestedHeight>
+        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
+        <RequestedHeight>320</RequestedHeight>
       </DesktopSettings>
     </Form>
     <Form xsi:type="ItemEdit">
       <DesktopSettings>
-        <SourceLocation DefaultValue="http://localhost:3000/index.html" />
-        <RequestedHeight>300</RequestedHeight>
+        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
+        <RequestedHeight>320</RequestedHeight>
       </DesktopSettings>
     </Form>
   </FormSettings>
+
+  <!-- List any domains the add-in might navigate/iframe to -->
+  <AppDomains>
+    <AppDomain>https://hsitxpt.github.io</AppDomain>
+  </AppDomains>
 
   <Permissions>ReadWriteItem</Permissions>
 </OfficeApp>
