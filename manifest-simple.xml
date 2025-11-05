@@ -4,14 +4,13 @@
            xmlns:ov="http://schemas.microsoft.com/office/mailappversionoverrides"
            xsi:type="MailApp">
 
-  <Id>f6efd93b-896e-4d55-a135-5294952dbc95</Id>
+  <Id>c1a3e6e3-62d2-4cb5-bbc2-6b712c200abc</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>ITXPT Labeling Team</ProviderName>
-  <DefaultLocale>sv-SE</DefaultLocale>
+  <ProviderName>Henrik's Lab</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
 
-  <DisplayName DefaultValue="ITXPT Labeling Templates"/>
-  <Description DefaultValue="Insert structured templates for labeling tests, deadlines, and process stages into your emails."/>
-  
+  <DisplayName DefaultValue="Insert Snippet"/>
+  <Description DefaultValue="Insert structured email snippets like test results, compliance checks, etc."/>
   <IconUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/help.html"/>
@@ -31,7 +30,7 @@
   </Requirements>
 
   <Permissions>ReadWriteItem</Permissions>
-  
+
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
@@ -51,7 +50,7 @@
 
           <ov:ExtensionPoint xsi:type="MessageReadCommandSurface">
             <ov:OfficeTab id="TabDefault">
-              <ov:Group id="grpRead" label="ITXPT Templates">
+              <ov:Group id="grpRead" label="Insert Snippet">
                 <ov:Control xsi:type="Button" id="btnReadOpenPane">
                   <ov:Label resid="Button.Label"/>
                   <ov:Supertip>
@@ -73,7 +72,7 @@
 
           <ov:ExtensionPoint xsi:type="MessageComposeCommandSurface">
             <ov:OfficeTab id="TabDefault">
-              <ov:Group id="grpCompose" label="ITXPT Templates">
+              <ov:Group id="grpCompose" label="Insert Snippet">
                 <ov:Control xsi:type="Button" id="btnComposeOpenPane">
                   <ov:Label resid="Button.Label"/>
                   <ov:Supertip>
@@ -104,18 +103,18 @@
       </ov:Images>
 
       <ov:Urls>
-        <ov:Url id="TaskPane.Url" DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/taskpane.html"/>
+        <ov:Url id="TaskPane.Url" DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
         <ov:Url id="Commands.Url" DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/commands.html"/>
       </ov:Urls>
 
       <ov:ShortStrings>
-        <ov:String id="Button.Label" DefaultValue="ITXPT Templates"/>
-        <ov:String id="SuperTip.Title" DefaultValue="ITXPT Labeling Templates"/>
-        <ov:String id="Group.Label" DefaultValue="ITXPT Templates"/>
+        <ov:String id="Button.Label" DefaultValue="Insert Snippet"/>
+        <ov:String id="SuperTip.Title" DefaultValue="Insert Snippet"/>
+        <ov:String id="Group.Label" DefaultValue="Insert Snippet"/>
       </ov:ShortStrings>
 
       <ov:LongStrings>
-        <ov:String id="SuperTip.Description" DefaultValue="Open the task pane to insert structured labeling templates into your email."/>
+        <ov:String id="SuperTip.Description" DefaultValue="Open the task pane to insert a predefined snippet into your email."/>
       </ov:LongStrings>
     </ov:Resources>
   </ov:VersionOverrides>

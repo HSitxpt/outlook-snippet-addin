@@ -31,21 +31,6 @@
     </Sets>
   </Requirements>
 
-  <!-- Where your pages live. Must be public HTTPS. -->
-  <FormSettings>
-    <Form xsi:type="ItemRead">
-      <DesktopSettings>
-        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
-        <RequestedHeight>320</RequestedHeight>
-      </DesktopSettings>
-    </Form>
-    <Form xsi:type="ItemEdit">
-      <DesktopSettings>
-        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
-      </DesktopSettings>
-    </Form>
-  </FormSettings>
-
   <Permissions>ReadWriteItem</Permissions>
 
   <Rule xsi:type="RuleCollection" Mode="Or">
