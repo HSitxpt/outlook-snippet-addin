@@ -30,6 +30,20 @@
     </Sets>
   </Requirements>
 
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/taskpane.html"/>
+        <RequestedHeight>320</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+    <Form xsi:type="ItemEdit">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/taskpane.html"/>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+
   <Permissions>ReadWriteItem</Permissions>
   
   <Rule xsi:type="RuleCollection" Mode="Or">
