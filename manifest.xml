@@ -61,7 +61,6 @@
     <ov:Hosts>
       <ov:Host xsi:type="MailHost">
         <ov:DesktopFormFactor>
-          <ov:FunctionFile resid="Commands.Url"/>
           <ov:ExtensionPoint xsi:type="MessageComposeCommandSurface">
             <ov:OfficeTab id="TabDefault">
               <ov:Group id="grpCompose" label="Insert Snippet">
@@ -94,7 +93,6 @@
       </ov:Images>
       <ov:Urls>
         <ov:Url id="TaskPane.Url" DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
-        <ov:Url id="Commands.Url" DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/commands.html"/>
       </ov:Urls>
       <ov:ShortStrings>
         <ov:String id="Button.Label" DefaultValue="Insert Snippet"/>
