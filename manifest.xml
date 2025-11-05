@@ -12,8 +12,13 @@
   <Description DefaultValue="Insert structured email snippets like test results, compliance checks, etc."/>
   <!-- Use a real 64x64 PNG you place in the repo -->
   <IconUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/assets/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/assets/icon-128.png"/>
   <!-- Any public https help page in your repo -->
   <SupportUrl DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/help.html"/>
+
+  <AppDomains>
+    <AppDomain>https://hsitxpt.github.io</AppDomain>
+  </AppDomains>
 
   <Hosts>
     <Host Name="Mailbox"/>
@@ -36,15 +41,14 @@
     <Form xsi:type="ItemEdit">
       <DesktopSettings>
         <SourceLocation DefaultValue="https://hsitxpt.github.io/outlook-snippet-addin/index.html"/>
-        <RequestedHeight>320</RequestedHeight>
       </DesktopSettings>
     </Form>
   </FormSettings>
 
-  <!-- List any domains the add-in might navigate/iframe to -->
-  <AppDomains>
-    <AppDomain>https://hsitxpt.github.io</AppDomain>
-  </AppDomains>
-
   <Permissions>ReadWriteItem</Permissions>
+
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Edit"/>
+  </Rule>
 </OfficeApp>

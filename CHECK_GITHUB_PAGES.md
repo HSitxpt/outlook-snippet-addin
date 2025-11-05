@@ -1,5 +1,10 @@
 # Kontrollera GitHub Pages
 
+## ✅ Status: GitHub Pages är live och pushade
+
+GitHub Pages är aktiverat och filerna är tillgängliga på:
+- Base URL: https://hsitxpt.github.io/outlook-snippet-addin/
+
 ## Steg 1: Testa att filerna finns på GitHub Pages
 
 Öppna dessa URL:er i webbläsaren:
