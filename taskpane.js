@@ -9,7 +9,7 @@ window.addInLoaded = true;
 // Add immediate console log to verify script is loading
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
-console.log("%cVersion 1.6.0", "color: green; font-size: 14px;");
+console.log("%cVersion 1.7.0", "color: green; font-size: 14px;");
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("taskpane.js loaded at:", new Date().toISOString());
 console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
@@ -965,6 +965,42 @@ function renderWorkflowSnippetFields(snippetType) {
           <input type="text" id="test-module-name" class="form-input" placeholder="Module name" />
         </div>
         <div class="form-group">
+          <label for="test-package-type" class="form-label">
+            <span class="label-icon">📋</span>
+            Package Type <span style="color: #d13438;">*</span>
+          </label>
+          <select id="test-package-type" class="form-select" required>
+            <option value="">Select package...</option>
+            <option value="sequoia">Sequoia</option>
+            <option value="linden">Linden</option>
+          </select>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Required - determines which tests are applicable</small>
+        </div>
+        <div class="form-group">
+          <label for="test-specification" class="form-label">
+            <span class="label-icon">📄</span>
+            Specification Document
+          </label>
+          <input type="text" id="test-specification" class="form-input" placeholder="e.g., S02P02-Time v2.2.0" />
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">ITxPT specification reference (e.g., S02P02-Time)</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <span class="label-icon">🔧</span>
+            Services Provided
+          </label>
+          <textarea id="test-services-provided" class="form-textarea" rows="3" placeholder="List services this module provides (one per line)&#10;e.g.,&#10;Time Service&#10;Location Service"></textarea>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Services this module provides to other modules</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <span class="label-icon">📥</span>
+            Services Consumed
+          </label>
+          <textarea id="test-services-consumed" class="form-textarea" rows="3" placeholder="List services this module consumes (one per line)&#10;e.g.,&#10;Time Service&#10;Location Service"></textarea>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Services this module consumes from other modules</small>
+        </div>
+        <div class="form-group">
           <label for="test-date" class="form-label">
             <span class="label-icon">📅</span>
             Test Date
@@ -983,12 +1019,19 @@ function renderWorkflowSnippetFields(snippetType) {
             <span class="label-icon">🧪</span>
             Test Results
           </label>
+          <div style="margin-bottom: 8px;">
+            <button type="button" id="generate-tests-btn" class="btn btn-secondary btn-full" style="margin-bottom: 8px;">
+              <span class="btn-icon">⚡</span>
+              <span>Generate Tests from Package & Services</span>
+            </button>
+            <small style="color: #605e5c; font-size: 11px; display: block; text-align: center;">Auto-generate tests based on package type and services</small>
+          </div>
           <div id="workflow-test-results" class="tests-container" style="margin-bottom: 10px;">
             <!-- Test results will be added here -->
           </div>
           <button type="button" id="add-workflow-test-btn" class="btn btn-secondary btn-full" style="margin-bottom: 10px;">
             <span class="btn-icon">➕</span>
-            <span>Add Test Result</span>
+            <span>Add Custom Test</span>
           </button>
         </div>
         <div class="form-group">
@@ -1000,12 +1043,18 @@ function renderWorkflowSnippetFields(snippetType) {
         </div>
       `;
       
-      // Add event listener for adding test results
+      // Add event listeners
       setTimeout(() => {
         const addTestBtn = document.getElementById("add-workflow-test-btn");
         if (addTestBtn) {
           addTestBtn.addEventListener("click", addWorkflowTestResult);
         }
+        
+        const generateTestsBtn = document.getElementById("generate-tests-btn");
+        if (generateTestsBtn) {
+          generateTestsBtn.addEventListener("click", generateTestsFromPackage);
+        }
+        
         // Add initial test result row
         addWorkflowTestResult();
       }, 100);
@@ -1199,8 +1248,126 @@ function addWorkflowTestResult() {
   });
 }
 
+function generateTestsFromPackage() {
+  const packageType = document.getElementById("test-package-type")?.value;
+  const specification = document.getElementById("test-specification")?.value?.trim() || "";
+  const servicesProvided = document.getElementById("test-services-provided")?.value?.trim() || "";
+  const servicesConsumed = document.getElementById("test-services-consumed")?.value?.trim() || "";
+  
+  if (!packageType) {
+    showMessage("Please select a package type first", "warning");
+    return;
+  }
+  
+  const container = document.getElementById("workflow-test-results");
+  if (!container) return;
+  
+  // Clear existing tests
+  container.innerHTML = "";
+  
+  // Base tests for all packages
+  const baseTests = [
+    { name: "Module Identification", description: "Verify module identification and basic connectivity" },
+    { name: "Network Configuration", description: "Test network setup and IP configuration" },
+    { name: "Package Compliance", description: `Verify compliance with ${packageType === "sequoia" ? "Sequoia" : "Linden"} package requirements` }
+  ];
+  
+  // Package-specific tests
+  const packageTests = {
+    sequoia: [
+      { name: "Sequoia Core Services", description: "Test core Sequoia package services" },
+      { name: "Sequoia Data Exchange", description: "Verify data exchange protocols" }
+    ],
+    linden: [
+      { name: "Linden Core Services", description: "Test core Linden package services" },
+      { name: "Linden Data Exchange", description: "Verify data exchange protocols" }
+    ]
+  };
+  
+  // Service-specific tests
+  const serviceTests = [];
+  const providedServices = servicesProvided.split('\n').filter(s => s.trim());
+  const consumedServices = servicesConsumed.split('\n').filter(s => s.trim());
+  
+  providedServices.forEach(service => {
+    const serviceName = service.trim();
+    if (serviceName) {
+      serviceTests.push({
+        name: `Service Provider: ${serviceName}`,
+        description: `Test ${serviceName} service provision and compliance with specification requirements`
+      });
+    }
+  });
+  
+  consumedServices.forEach(service => {
+    const serviceName = service.trim();
+    if (serviceName) {
+      serviceTests.push({
+        name: `Service Consumer: ${serviceName}`,
+        description: `Test ${serviceName} service consumption and integration`
+      });
+    }
+  });
+  
+  // Specification-specific tests
+  if (specification) {
+    serviceTests.push({
+      name: `Specification Compliance: ${specification}`,
+      description: `Verify compliance with ${specification} specification requirements`
+    });
+  }
+  
+  // Combine all tests
+  const allTests = [...baseTests, ...packageTests[packageType], ...serviceTests];
+  
+  // Add tests to container
+  allTests.forEach((test, index) => {
+    const testDiv = document.createElement("div");
+    testDiv.className = "test-row";
+    testDiv.style.marginBottom = "10px";
+    testDiv.style.padding = "10px";
+    testDiv.style.background = "#f8f9fa";
+    testDiv.style.borderRadius = "4px";
+    testDiv.style.border = "1px solid #c8c6c4";
+    
+    testDiv.innerHTML = `
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center;">
+        <div>
+          <input type="text" class="form-input workflow-test-name" value="${escapeHtml(test.name)}" style="margin: 0; font-weight: 600;" />
+          <small style="color: #605e5c; font-size: 10px; display: block; margin-top: 2px;">${escapeHtml(test.description)}</small>
+        </div>
+        <select class="form-select workflow-test-status" style="margin: 0;">
+          <option value="not-tested">○ Not Tested</option>
+          <option value="in-progress">⟳ In Progress</option>
+          <option value="passed">✓ Passed</option>
+          <option value="failed">✗ Failed</option>
+          <option value="warning">⚠ Warning</option>
+        </select>
+        <input type="text" class="form-input workflow-test-notes" placeholder="Notes/errors" style="margin: 0;" />
+        <button type="button" class="remove-workflow-test-btn" style="padding: 6px 10px; background: #d13438; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+      </div>
+    `;
+    
+    container.appendChild(testDiv);
+    
+    // Add remove button listener
+    const removeBtn = testDiv.querySelector(".remove-workflow-test-btn");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", () => {
+        testDiv.remove();
+      });
+    }
+  });
+  
+  showMessage(`Generated ${allTests.length} tests based on ${packageType === "sequoia" ? "Sequoia" : "Linden"} package and selected services`, "success");
+}
+
 function generateTestResultsReportSnippet() {
   const moduleName = document.getElementById("test-module-name")?.value || "[Module Name]";
+  const packageType = document.getElementById("test-package-type")?.value || "";
+  const specification = document.getElementById("test-specification")?.value?.trim() || "";
+  const servicesProvided = document.getElementById("test-services-provided")?.value?.trim() || "";
+  const servicesConsumed = document.getElementById("test-services-consumed")?.value?.trim() || "";
   const testDate = document.getElementById("test-date")?.value || "";
   const testerName = document.getElementById("tester-name")?.value || "[Tester Name]";
   const testNotes = document.getElementById("test-notes")?.value || "";
@@ -1240,8 +1407,12 @@ function generateTestResultsReportSnippet() {
 
 <div style="background: white; padding: 15px; border-radius: 4px; margin: 15px 0; border: 1px solid #c8c6c4;">
 <p style="margin: 5px 0;"><strong>Module:</strong> ${escapeHtml(moduleName)}</p>
+${packageType ? `<p style="margin: 5px 0;"><strong>Package:</strong> ${packageType === "sequoia" ? "Sequoia" : "Linden"}</p>` : ''}
+${specification ? `<p style="margin: 5px 0;"><strong>Specification:</strong> ${escapeHtml(specification)}</p>` : ''}
 ${dateText ? `<p style="margin: 5px 0;"><strong>Test Date:</strong> ${dateText}</p>` : ''}
 <p style="margin: 5px 0;"><strong>Tester:</strong> ${escapeHtml(testerName)}</p>
+${servicesProvided ? `<p style="margin: 5px 0;"><strong>Services Provided:</strong> ${escapeHtml(servicesProvided.split('\n').filter(s => s.trim()).join(', '))}</p>` : ''}
+${servicesConsumed ? `<p style="margin: 5px 0;"><strong>Services Consumed:</strong> ${escapeHtml(servicesConsumed.split('\n').filter(s => s.trim()).join(', '))}</p>` : ''}
 </div>
 
 <h3 style="color: #0078d4; margin-top: 20px;">Test Summary</h3>
@@ -1332,6 +1503,17 @@ function insertWorkflowSnippet() {
       if (!shippingAddress) {
         showMessage("Shipping Address is required. Please fill in all mandatory fields.", "error");
         document.getElementById("shipping-address")?.focus();
+        return;
+      }
+    }
+    
+    // Validate mandatory fields for test results report
+    if (snippetType === "test-results-report") {
+      const packageType = document.getElementById("test-package-type")?.value;
+      
+      if (!packageType) {
+        showMessage("Package Type is required. Please select a package type.", "error");
+        document.getElementById("test-package-type")?.focus();
         return;
       }
     }
