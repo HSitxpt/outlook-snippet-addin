@@ -17,10 +17,26 @@ function initializeApp() {
   
   // Workflow snippet type selector
   const workflowSnippetType = document.getElementById("workflow-snippet-type");
-  workflowSnippetType.addEventListener("change", handleWorkflowSnippetChange);
+  if (workflowSnippetType) {
+    workflowSnippetType.addEventListener("change", (e) => {
+      console.log("Workflow snippet type changed to:", e.target.value);
+      handleWorkflowSnippetChange();
+    });
+  } else {
+    console.warn("Workflow snippet type selector not found");
+  }
   
   // Insert workflow snippet button
-  document.getElementById("insert-workflow-snippet-btn").addEventListener("click", insertWorkflowSnippet);
+  const insertWorkflowBtn = document.getElementById("insert-workflow-snippet-btn");
+  if (insertWorkflowBtn) {
+    insertWorkflowBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log("Insert workflow snippet button clicked");
+      insertWorkflowSnippet();
+    });
+  } else {
+    console.warn("Insert workflow snippet button not found");
+  }
   
   // Add test button
   document.getElementById("add-test-btn").addEventListener("click", addTestRow);
@@ -1045,40 +1061,99 @@ ${notTested.length > 0 ? `<p style="margin: 5px 0; color: #605e5c;"><strong>Not 
 }
 
 function insertWorkflowSnippet() {
-  const snippetType = document.getElementById("workflow-snippet-type").value;
+  console.log("insertWorkflowSnippet called");
   
-  if (snippetType === "none" || snippetType === "custom-template") {
-    showMessage("Please select a workflow snippet type", "warning");
-    return;
-  }
-  
-  const template = generateWorkflowSnippet(snippetType);
-  
-  if (!template || template.trim() === "") {
-    showMessage("Error generating snippet", "error");
-    return;
-  }
-  
-  const item = Office.context.mailbox.item;
-  
-  if (item.itemType === Office.MailboxEnums.ItemType.Message) {
-    if (item.body) {
-      item.body.setSelectedDataAsync(
-        template,
-        { coercionType: Office.CoercionType.Html },
-        (result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            showMessage("Workflow snippet inserted successfully!", "success");
-          } else {
-            showMessage("Error inserting snippet: " + result.error.message, "error");
-            console.error("Error details:", result.error);
-          }
-        }
-      );
-    } else {
-      showMessage("Cannot write to this message. Please open a new email to compose.", "error");
+  try {
+    const snippetType = document.getElementById("workflow-snippet-type").value;
+    console.log("Snippet type:", snippetType);
+    
+    if (snippetType === "none" || snippetType === "custom-template") {
+      showMessage("Please select a workflow snippet type", "warning");
+      return;
     }
-  } else {
-    showMessage("This only works with email messages.", "error");
+    
+    const template = generateWorkflowSnippet(snippetType);
+    console.log("Template generated, length:", template ? template.length : 0);
+    
+    if (!template || template.trim() === "") {
+      showMessage("Error generating snippet", "error");
+      console.error("Template is empty");
+      return;
+    }
+    
+    if (!Office || !Office.context || !Office.context.mailbox) {
+      showMessage("Office.js is not loaded. Please wait a moment and try again.", "error");
+      console.error("Office.js not available");
+      return;
+    }
+    
+    const item = Office.context.mailbox.item;
+    console.log("Item type:", item ? item.itemType : "null");
+    
+    if (!item) {
+      showMessage("No email item found. Please open or compose an email first.", "error");
+      return;
+    }
+    
+    if (item.itemType === Office.MailboxEnums.ItemType.Message) {
+      if (item.body) {
+        console.log("Inserting template...");
+        
+        // Try setSelectedDataAsync first (if there's a selection)
+        // Otherwise use getTypeAsync and then insert at cursor
+        item.body.getTypeAsync((typeResult) => {
+          if (typeResult.status === Office.AsyncResultStatus.Succeeded) {
+            const bodyType = typeResult.value;
+            console.log("Body type:", bodyType);
+            
+            // Try to insert at selection, fallback to appending
+            const insertCallback = (result) => {
+              if (result.status === Office.AsyncResultStatus.Succeeded) {
+                console.log("Snippet inserted successfully");
+                showMessage("Workflow snippet inserted successfully!", "success");
+              } else {
+                console.error("Error inserting snippet:", result.error);
+                // If setSelectedDataAsync fails, try appending
+                if (result.error.code === 9020) { // No selection
+                  console.log("No selection, trying to append...");
+                  item.body.appendAsync(
+                    template,
+                    { coercionType: Office.CoercionType.Html },
+                    (appendResult) => {
+                      if (appendResult.status === Office.AsyncResultStatus.Succeeded) {
+                        showMessage("Workflow snippet inserted successfully!", "success");
+                      } else {
+                        showMessage("Error inserting snippet: " + (appendResult.error ? appendResult.error.message : "Unknown error"), "error");
+                      }
+                    }
+                  );
+                } else {
+                  showMessage("Error inserting snippet: " + (result.error ? result.error.message : "Unknown error"), "error");
+                }
+              }
+            };
+            
+            // Try setSelectedDataAsync first
+            item.body.setSelectedDataAsync(
+              template,
+              { coercionType: Office.CoercionType.Html },
+              insertCallback
+            );
+          } else {
+            showMessage("Error reading email body type", "error");
+            console.error("Error getting body type:", typeResult.error);
+          }
+        });
+      } else {
+        showMessage("Cannot write to this message. Please open a new email to compose.", "error");
+        console.error("Item body is null");
+      }
+    } else {
+      showMessage("This only works with email messages.", "error");
+      console.error("Item type is not Message:", item.itemType);
+    }
+  } catch (error) {
+    console.error("Exception in insertWorkflowSnippet:", error);
+    showMessage("An error occurred: " + error.message, "error");
   }
 }
