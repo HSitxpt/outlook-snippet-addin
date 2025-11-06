@@ -9,7 +9,7 @@ window.addInLoaded = true;
 // Add immediate console log to verify script is loading
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
-console.log("%cVersion 1.4.0", "color: green; font-size: 14px;");
+console.log("%cVersion 1.5.0", "color: green; font-size: 14px;");
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("taskpane.js loaded at:", new Date().toISOString());
 console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
@@ -892,15 +892,64 @@ function renderWorkflowSnippetFields(snippetType) {
       break;
       
     case "lab-shipping-instructions":
+      // Load saved values from localStorage or use defaults
+      const savedAddress = localStorage.getItem('itxpt_shipping_address') || 'Lindholmspiren 3-5\nLindhomen Science Park\n41756 Gothenburg\nSweden';
+      const savedEORI = localStorage.getItem('itxpt_eori') || 'BE0656563009';
+      const savedOrgNumber = localStorage.getItem('itxpt_org_number') || '502082-6615';
+      const savedContact = localStorage.getItem('itxpt_contact') || 'Jim Lindkvist or Henrik Simpanen';
+      
       fieldsContainer.innerHTML = `
         <div class="form-group">
           <label for="contact-person" class="form-label">
             <span class="label-icon">👤</span>
             Contact Person
           </label>
-          <input type="text" id="contact-person" class="form-input" placeholder="Jim Lindkvist or Henrik Simpanen" value="Jim Lindkvist or Henrik Simpanen" />
+          <input type="text" id="contact-person" class="form-input" placeholder="Jim Lindkvist or Henrik Simpanen" value="${escapeHtml(savedContact)}" />
+        </div>
+        <div class="form-group">
+          <label for="shipping-address" class="form-label">
+            <span class="label-icon">📍</span>
+            Shipping Address
+          </label>
+          <textarea id="shipping-address" class="form-textarea" rows="4" placeholder="Enter shipping address">${escapeHtml(savedAddress)}</textarea>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">This information is stored locally in your browser only</small>
+        </div>
+        <div class="form-group">
+          <label for="eori-number" class="form-label">
+            <span class="label-icon">🌍</span>
+            EORI Number
+          </label>
+          <input type="text" id="eori-number" class="form-input" placeholder="BE0656563009" value="${escapeHtml(savedEORI)}" />
+        </div>
+        <div class="form-group">
+          <label for="org-number" class="form-label">
+            <span class="label-icon">🏢</span>
+            Organization Number
+          </label>
+          <input type="text" id="org-number" class="form-input" placeholder="502082-6615" value="${escapeHtml(savedOrgNumber)}" />
         </div>
       `;
+      
+      // Auto-save when fields change
+      setTimeout(() => {
+        const fieldMappings = {
+          'contact-person': 'itxpt_contact',
+          'shipping-address': 'itxpt_shipping_address',
+          'eori-number': 'itxpt_eori',
+          'org-number': 'itxpt_org_number'
+        };
+        
+        Object.keys(fieldMappings).forEach(fieldId => {
+          const field = document.getElementById(fieldId);
+          if (field) {
+            field.addEventListener('change', function() {
+              const storageKey = fieldMappings[fieldId];
+              localStorage.setItem(storageKey, this.value);
+              console.log('Saved', storageKey, 'to localStorage');
+            });
+          }
+        });
+      }, 100);
       break;
       
     case "test-results-report":
@@ -1052,7 +1101,15 @@ function generateRemoteSessionSetupSnippet() {
 }
 
 function generateLabShippingInstructionsSnippet() {
-  const contactPerson = document.getElementById("contact-person")?.value || "Jim Lindkvist or Henrik Simpanen";
+  // Get values from form or localStorage
+  const contactPerson = document.getElementById("contact-person")?.value || localStorage.getItem('itxpt_contact') || "Jim Lindkvist or Henrik Simpanen";
+  const shippingAddress = document.getElementById("shipping-address")?.value || localStorage.getItem('itxpt_shipping_address') || "Lindholmspiren 3-5\nLindhomen Science Park\n41756 Gothenburg\nSweden";
+  const eoriNumber = document.getElementById("eori-number")?.value || localStorage.getItem('itxpt_eori') || "BE0656563009";
+  const orgNumber = document.getElementById("org-number")?.value || localStorage.getItem('itxpt_org_number') || "502082-6615";
+  
+  // Format address with line breaks
+  const addressLines = shippingAddress.split('\n').map(line => escapeHtml(line.trim())).filter(line => line);
+  const formattedAddress = addressLines.join('<br/>');
   
   return `
 <div style="font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: #f8f9fa; border-left: 5px solid #0078d4; border-radius: 6px; margin: 15px 0;">
@@ -1063,13 +1120,10 @@ function generateLabShippingInstructionsSnippet() {
 <div style="background: white; padding: 15px; border-radius: 4px; margin: 15px 0; border: 1px solid #c8c6c4;">
 <p style="margin: 5px 0;"><strong>ITxPT</strong><br/>
 ${escapeHtml(contactPerson)}<br/>
-Lindholmspiren 3-5<br/>
-Lindhomen Science Park<br/>
-41756 Gothenburg<br/>
-Sweden</p>
+${formattedAddress}</p>
 
-<p style="margin: 10px 0 5px 0;"><strong>EORI:</strong> BE0656563009</p>
-<p style="margin: 5px 0;"><strong>Orgnumber:</strong> 502082-6615</p>
+<p style="margin: 10px 0 5px 0;"><strong>EORI:</strong> ${escapeHtml(eoriNumber)}</p>
+<p style="margin: 5px 0;"><strong>Orgnumber:</strong> ${escapeHtml(orgNumber)}</p>
 </div>
 
 <div style="background: #fff4e5; padding: 12px; border-left: 4px solid #ffaa44; border-radius: 4px; margin: 15px 0;">
