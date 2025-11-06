@@ -9,7 +9,7 @@ window.addInLoaded = true;
 // Add immediate console log to verify script is loading
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
-console.log("%cVersion 1.5.0", "color: green; font-size: 14px;");
+console.log("%cVersion 1.6.0", "color: green; font-size: 14px;");
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("taskpane.js loaded at:", new Date().toISOString());
 console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
@@ -892,41 +892,44 @@ function renderWorkflowSnippetFields(snippetType) {
       break;
       
     case "lab-shipping-instructions":
-      // Load saved values from localStorage or use defaults
+      // Load saved values from localStorage (no hardcoded defaults for sensitive data)
       const savedAddress = localStorage.getItem('itxpt_shipping_address') || 'Lindholmspiren 3-5\nLindhomen Science Park\n41756 Gothenburg\nSweden';
-      const savedEORI = localStorage.getItem('itxpt_eori') || 'BE0656563009';
-      const savedOrgNumber = localStorage.getItem('itxpt_org_number') || '502082-6615';
       const savedContact = localStorage.getItem('itxpt_contact') || 'Jim Lindkvist or Henrik Simpanen';
+      const savedEORI = localStorage.getItem('itxpt_eori') || '';
+      const savedOrgNumber = localStorage.getItem('itxpt_org_number') || '';
       
       fieldsContainer.innerHTML = `
         <div class="form-group">
           <label for="contact-person" class="form-label">
             <span class="label-icon">👤</span>
-            Contact Person
+            Contact Person <span style="color: #d13438;">*</span>
           </label>
-          <input type="text" id="contact-person" class="form-input" placeholder="Jim Lindkvist or Henrik Simpanen" value="${escapeHtml(savedContact)}" />
+          <input type="text" id="contact-person" class="form-input" placeholder="Jim Lindkvist or Henrik Simpanen" value="${escapeHtml(savedContact)}" required />
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Required field</small>
         </div>
         <div class="form-group">
           <label for="shipping-address" class="form-label">
             <span class="label-icon">📍</span>
-            Shipping Address
+            Shipping Address <span style="color: #d13438;">*</span>
           </label>
-          <textarea id="shipping-address" class="form-textarea" rows="4" placeholder="Enter shipping address">${escapeHtml(savedAddress)}</textarea>
-          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">This information is stored locally in your browser only</small>
+          <textarea id="shipping-address" class="form-textarea" rows="4" placeholder="Enter shipping address (one line per address component)" required>${escapeHtml(savedAddress)}</textarea>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Required field. This information is stored locally in your browser only.</small>
         </div>
         <div class="form-group">
           <label for="eori-number" class="form-label">
             <span class="label-icon">🌍</span>
-            EORI Number
+            EORI Number <span style="color: #605e5c; font-weight: normal;">(Optional)</span>
           </label>
-          <input type="text" id="eori-number" class="form-input" placeholder="BE0656563009" value="${escapeHtml(savedEORI)}" />
+          <input type="text" id="eori-number" class="form-input" placeholder="Enter EORI number if needed" value="${escapeHtml(savedEORI)}" />
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Optional - only include if required for shipping</small>
         </div>
         <div class="form-group">
           <label for="org-number" class="form-label">
             <span class="label-icon">🏢</span>
-            Organization Number
+            Organization Number <span style="color: #605e5c; font-weight: normal;">(Optional)</span>
           </label>
-          <input type="text" id="org-number" class="form-input" placeholder="502082-6615" value="${escapeHtml(savedOrgNumber)}" />
+          <input type="text" id="org-number" class="form-input" placeholder="Enter organization number if needed" value="${escapeHtml(savedOrgNumber)}" />
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Optional - only include if required for shipping</small>
         </div>
       `;
       
@@ -1101,15 +1104,39 @@ function generateRemoteSessionSetupSnippet() {
 }
 
 function generateLabShippingInstructionsSnippet() {
-  // Get values from form or localStorage
-  const contactPerson = document.getElementById("contact-person")?.value || localStorage.getItem('itxpt_contact') || "Jim Lindkvist or Henrik Simpanen";
-  const shippingAddress = document.getElementById("shipping-address")?.value || localStorage.getItem('itxpt_shipping_address') || "Lindholmspiren 3-5\nLindhomen Science Park\n41756 Gothenburg\nSweden";
-  const eoriNumber = document.getElementById("eori-number")?.value || localStorage.getItem('itxpt_eori') || "BE0656563009";
-  const orgNumber = document.getElementById("org-number")?.value || localStorage.getItem('itxpt_org_number') || "502082-6615";
+  // Get values from form or localStorage (mandatory fields must be filled)
+  const contactPerson = document.getElementById("contact-person")?.value?.trim() || localStorage.getItem('itxpt_contact')?.trim();
+  const shippingAddress = document.getElementById("shipping-address")?.value?.trim() || localStorage.getItem('itxpt_shipping_address')?.trim();
+  const eoriNumber = document.getElementById("eori-number")?.value?.trim() || localStorage.getItem('itxpt_eori')?.trim() || '';
+  const orgNumber = document.getElementById("org-number")?.value?.trim() || localStorage.getItem('itxpt_org_number')?.trim() || '';
+  
+  // Validate mandatory fields
+  if (!contactPerson) {
+    showMessage("Contact Person is required", "error");
+    return "";
+  }
+  
+  if (!shippingAddress) {
+    showMessage("Shipping Address is required", "error");
+    return "";
+  }
   
   // Format address with line breaks
   const addressLines = shippingAddress.split('\n').map(line => escapeHtml(line.trim())).filter(line => line);
   const formattedAddress = addressLines.join('<br/>');
+  
+  // Build optional fields HTML
+  let optionalFields = '';
+  if (eoriNumber || orgNumber) {
+    optionalFields = '<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e1dfdd;">';
+    if (eoriNumber) {
+      optionalFields += `<p style="margin: 5px 0;"><strong>EORI:</strong> ${escapeHtml(eoriNumber)}</p>`;
+    }
+    if (orgNumber) {
+      optionalFields += `<p style="margin: 5px 0;"><strong>Orgnumber:</strong> ${escapeHtml(orgNumber)}</p>`;
+    }
+    optionalFields += '</div>';
+  }
   
   return `
 <div style="font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: #f8f9fa; border-left: 5px solid #0078d4; border-radius: 6px; margin: 15px 0;">
@@ -1121,9 +1148,7 @@ function generateLabShippingInstructionsSnippet() {
 <p style="margin: 5px 0;"><strong>ITxPT</strong><br/>
 ${escapeHtml(contactPerson)}<br/>
 ${formattedAddress}</p>
-
-<p style="margin: 10px 0 5px 0;"><strong>EORI:</strong> ${escapeHtml(eoriNumber)}</p>
-<p style="margin: 5px 0;"><strong>Orgnumber:</strong> ${escapeHtml(orgNumber)}</p>
+${optionalFields}
 </div>
 
 <div style="background: #fff4e5; padding: 12px; border-left: 4px solid #ffaa44; border-radius: 4px; margin: 15px 0;">
@@ -1293,11 +1318,29 @@ function insertWorkflowSnippet() {
       return;
     }
     
+    // Validate mandatory fields for lab shipping instructions
+    if (snippetType === "lab-shipping-instructions") {
+      const contactPerson = document.getElementById("contact-person")?.value?.trim();
+      const shippingAddress = document.getElementById("shipping-address")?.value?.trim();
+      
+      if (!contactPerson) {
+        showMessage("Contact Person is required. Please fill in all mandatory fields.", "error");
+        document.getElementById("contact-person")?.focus();
+        return;
+      }
+      
+      if (!shippingAddress) {
+        showMessage("Shipping Address is required. Please fill in all mandatory fields.", "error");
+        document.getElementById("shipping-address")?.focus();
+        return;
+      }
+    }
+    
     const template = generateWorkflowSnippet(snippetType);
     console.log("Template generated, length:", template ? template.length : 0);
     
     if (!template || template.trim() === "") {
-      showMessage("Error generating snippet", "error");
+      showMessage("Error generating snippet. Please check that all required fields are filled.", "error");
       console.error("Template is empty");
       return;
     }
