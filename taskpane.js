@@ -9,7 +9,7 @@ window.addInLoaded = true;
 // Add immediate console log to verify script is loading
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
-console.log("%cVersion 1.3.0", "color: green; font-size: 14px;");
+console.log("%cVersion 1.4.0", "color: green; font-size: 14px;");
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("taskpane.js loaded at:", new Date().toISOString());
 console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
@@ -842,20 +842,33 @@ function renderWorkflowSnippetFields(snippetType) {
     case "documentation-request":
       fieldsContainer.innerHTML = `
         <div class="form-group">
+          <label for="package-type" class="form-label">
+            <span class="label-icon">📦</span>
+            Package Type
+          </label>
+          <select id="package-type" class="form-select">
+            <option value="sequoia">Sequoia</option>
+            <option value="linden">Linden</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label for="module-label" class="form-label">
             <span class="label-icon">🏷️</span>
             Module Label (e.g., label process 20250122-0226)
           </label>
           <input type="text" id="module-label" class="form-input" placeholder="label process 20250122-0226" />
         </div>
-        <div class="form-group">
-          <label for="questionnaire-link" class="form-label">
-            <span class="label-icon">🔗</span>
-            Questionnaire Link
-          </label>
-          <input type="text" id="questionnaire-link" class="form-input" placeholder="https://forms.office.com/e/z4AzDkB0pT" value="https://forms.office.com/e/z4AzDkB0pT" />
-        </div>
       `;
+      
+      // Update questionnaire link when package type changes
+      setTimeout(() => {
+        const packageType = document.getElementById("package-type");
+        if (packageType) {
+          packageType.addEventListener("change", function() {
+            console.log("Package type changed to:", this.value);
+          });
+        }
+      }, 100);
       break;
       
     case "remote-session-setup":
@@ -872,20 +885,14 @@ function renderWorkflowSnippetFields(snippetType) {
             <span class="label-icon">📅</span>
             Booking Link
           </label>
-          <input type="text" id="booking-link" class="form-input" placeholder="ITxPT Gothenburg Lab booking link" />
+          <input type="text" id="booking-link" class="form-input" value="https://outlook.office365.com/book/ITxPTGothenburgLab@itxpt.org/" readonly style="background-color: #f3f2f1;" />
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Note: File attachments must be added manually to the email</small>
         </div>
       `;
       break;
       
     case "lab-shipping-instructions":
       fieldsContainer.innerHTML = `
-        <div class="form-group">
-          <label for="module-name" class="form-label">
-            <span class="label-icon">📦</span>
-            Module Name
-          </label>
-          <input type="text" id="module-name" class="form-input" placeholder="Module name" />
-        </div>
         <div class="form-group">
           <label for="contact-person" class="form-label">
             <span class="label-icon">👤</span>
@@ -970,12 +977,20 @@ function generateWorkflowSnippet(snippetType) {
 }
 
 function generateDocumentationRequestSnippet() {
+  const packageType = document.getElementById("package-type")?.value || "sequoia";
   const moduleLabel = document.getElementById("module-label")?.value || "label process [DATE]";
-  const questionnaireLink = document.getElementById("questionnaire-link")?.value || "https://forms.office.com/e/z4AzDkB0pT";
+  
+  // Set questionnaire link based on package type
+  const questionnaireLinks = {
+    "sequoia": "https://forms.office.com/e/z4AzDkB0pT",
+    "linden": "https://forms.office.com/e/3tK3D57KhZ"
+  };
+  const questionnaireLink = questionnaireLinks[packageType] || questionnaireLinks["sequoia"];
+  const packageName = packageType === "sequoia" ? "Sequoia" : "Linden";
   
   return `
 <div style="font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: #f8f9fa; border-left: 5px solid #0078d4; border-radius: 6px; margin: 15px 0;">
-<p>The labelling test for your module (<strong>${escapeHtml(moduleLabel)}</strong>) will be handled by the ITxPT Gothenburg laboratory.</p>
+<p>The labelling test for your module (<strong>${escapeHtml(moduleLabel)}</strong>) - <strong>${packageName} Package</strong> - will be handled by the ITxPT Gothenburg laboratory.</p>
 
 <p><strong>The second step of the labelling process is the collection of documents.</strong></p>
 
@@ -1009,7 +1024,7 @@ function generateDocumentationRequestSnippet() {
 
 function generateRemoteSessionSetupSnippet() {
   const zerotierId = document.getElementById("zerotier-network-id")?.value || "93afae5963c29064";
-  const bookingLink = document.getElementById("booking-link")?.value || "ITxPT Gothenburg Lab";
+  const bookingLink = document.getElementById("booking-link")?.value || "https://outlook.office365.com/book/ITxPTGothenburgLab@itxpt.org/";
   
   return `
 <div style="font-family: Segoe UI, Arial, sans-serif; padding: 20px; background: #f8f9fa; border-left: 5px solid #0078d4; border-radius: 6px; margin: 15px 0;">
@@ -1018,13 +1033,14 @@ function generateRemoteSessionSetupSnippet() {
 <h3 style="color: #0078d4; margin-top: 20px;">Getting Started</h3>
 <p>To begin, please follow the attached guide:</p>
 <p>📂 <strong>ITxPT Bridge Setup Guide.pdf</strong></p>
+<p>📦 <strong>VirtualBox VM file</strong> (attached)</p>
 
 <p>You'll need to connect to our network using Zero Tier. Below is your unique network ID:</p>
 <p>🔗 <strong>ZeroTier Network ID:</strong> <code style="background: #e1dfdd; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${escapeHtml(zerotierId)}</code></p>
 
 <h3 style="color: #0078d4; margin-top: 20px;">Book Your Session</h3>
 <p>Once your setup is complete, or if you need any assistance, please schedule a session with us at your convenience:</p>
-<p>📅 <strong>Booking Link:</strong> ${escapeHtml(bookingLink)}</p>
+<p>📅 <strong>Booking Link:</strong> <a href="${escapeHtml(bookingLink)}" style="color: #0078d4; text-decoration: none; font-weight: bold;">${escapeHtml(bookingLink)}</a></p>
 
 <p style="background: #fff4e5; padding: 12px; border-left: 4px solid #ffaa44; border-radius: 4px; margin: 15px 0;">
 <strong>⚠️ Important:</strong> Do not book a Remote Test Session before the Bridge Setup is Complete and you have provided a print-screen of the state of your bridge VM.
@@ -1036,7 +1052,6 @@ function generateRemoteSessionSetupSnippet() {
 }
 
 function generateLabShippingInstructionsSnippet() {
-  const moduleName = document.getElementById("module-name")?.value || "[Module Name]";
   const contactPerson = document.getElementById("contact-person")?.value || "Jim Lindkvist or Henrik Simpanen";
   
   return `
