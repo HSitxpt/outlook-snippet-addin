@@ -3,8 +3,16 @@
 let testCounter = 0;
 let savedPresets = [];
 
+// Mark that script is loading
+window.addInLoaded = true;
+
 // Add immediate console log to verify script is loading
-console.log("taskpane.js loaded");
+console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
+console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
+console.log("%cVersion 1.3.0", "color: green; font-size: 14px;");
+console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
+console.log("taskpane.js loaded at:", new Date().toISOString());
+console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
 
 // Initialize when DOM is ready
 function initWhenReady() {
@@ -38,8 +46,21 @@ setTimeout(() => {
 }, 1000);
 
 function initializeApp() {
-  console.log("initializeApp() called");
+  console.log("%c=== INITIALIZING APP ===", "color: green; font-size: 16px; font-weight: bold;");
+  console.log("initializeApp() called at:", new Date().toISOString());
   console.log("Document ready state:", document.readyState);
+  
+  // Update version indicator in UI
+  try {
+    const buildTimeEl = document.getElementById("build-time");
+    if (buildTimeEl) {
+      const now = new Date();
+      buildTimeEl.textContent = now.toLocaleTimeString();
+      buildTimeEl.style.color = "#4caf50";
+    }
+  } catch (e) {
+    console.warn("Could not update build time:", e);
+  }
   
   try {
     // Load saved presets
@@ -68,8 +89,10 @@ function initializeApp() {
       newBtn.addEventListener("click", function(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log("Insert workflow snippet button clicked!");
-        alert("Button clicked! Check console for details.");
+        console.log("%c🔘 BUTTON CLICKED!", "color: orange; font-size: 18px; font-weight: bold;");
+        console.log("Insert workflow snippet button clicked at:", new Date().toISOString());
+        console.log("Button element:", this);
+        console.log("Event:", e);
         
         // Visual feedback
         this.style.opacity = "0.7";
@@ -78,6 +101,7 @@ function initializeApp() {
         this.innerHTML = "Inserting...";
         
         setTimeout(() => {
+          console.log("Calling insertWorkflowSnippet()...");
           insertWorkflowSnippet();
           // Reset button after a moment
           setTimeout(() => {
@@ -87,6 +111,11 @@ function initializeApp() {
           }, 1000);
         }, 100);
       });
+      
+      // Also add a test click handler that always fires
+      newBtn.addEventListener("click", function() {
+        console.log("%c✅ SECOND CLICK HANDLER FIRED", "color: purple; font-size: 14px; font-weight: bold;");
+      }, true); // Use capture phase
     } else {
       console.error("Insert workflow snippet button not found!");
     }
@@ -181,10 +210,31 @@ function initializeApp() {
     updateTestCount();
     updateCharCount();
     
-    console.log("✅ All event listeners attached");
+    console.log("%c✅ ALL EVENT LISTENERS ATTACHED SUCCESSFULLY", "color: green; font-size: 14px; font-weight: bold;");
+    console.log("Ready to use! Try clicking a button now.");
+    
+    // Visual confirmation in UI
+    const versionIndicator = document.getElementById("version-indicator");
+    if (versionIndicator) {
+      versionIndicator.style.background = "rgba(76, 175, 80, 0.3)";
+      versionIndicator.style.border = "1px solid #4caf50";
+      setTimeout(() => {
+        versionIndicator.style.background = "rgba(255,255,255,0.2)";
+        versionIndicator.style.border = "none";
+      }, 3000);
+    }
   } catch (error) {
-    console.error("❌ Error in initializeApp:", error);
+    console.error("%c❌ ERROR IN INITIALIZEAPP", "color: red; font-size: 16px; font-weight: bold;");
+    console.error("Error details:", error);
+    console.error("Stack:", error.stack);
     alert("Error initializing app: " + error.message);
+    
+    // Show error in UI
+    const versionIndicator = document.getElementById("version-indicator");
+    if (versionIndicator) {
+      versionIndicator.style.background = "rgba(244, 67, 54, 0.3)";
+      versionIndicator.textContent = "ERROR: " + error.message;
+    }
   }
 }
 
