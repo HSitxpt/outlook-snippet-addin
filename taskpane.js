@@ -9,7 +9,7 @@ window.addInLoaded = true;
 // Add immediate console log to verify script is loading
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("%cITXPT Add-in Script Loading", "color: blue; font-size: 16px; font-weight: bold;");
-console.log("%cVersion 1.7.0", "color: green; font-size: 14px;");
+console.log("%cVersion 1.8.0", "color: green; font-size: 14px;");
 console.log("%c========================================", "color: blue; font-size: 20px; font-weight: bold;");
 console.log("taskpane.js loaded at:", new Date().toISOString());
 console.log("Script file URL:", document.currentScript ? document.currentScript.src : "unknown");
@@ -989,16 +989,20 @@ function renderWorkflowSnippetFields(snippetType) {
             <span class="label-icon">🔧</span>
             Services Provided
           </label>
-          <textarea id="test-services-provided" class="form-textarea" rows="3" placeholder="List services this module provides (one per line)&#10;e.g.,&#10;Time Service&#10;Location Service"></textarea>
-          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Services this module provides to other modules</small>
+          <div id="services-provided-checklist" style="max-height: 200px; overflow-y: auto; border: 1px solid #c8c6c4; border-radius: 4px; padding: 8px; background: white;">
+            <!-- Service checkboxes will be inserted here -->
+          </div>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Select services this module provides to other modules</small>
         </div>
         <div class="form-group">
           <label class="form-label">
             <span class="label-icon">📥</span>
             Services Consumed
           </label>
-          <textarea id="test-services-consumed" class="form-textarea" rows="3" placeholder="List services this module consumes (one per line)&#10;e.g.,&#10;Time Service&#10;Location Service"></textarea>
-          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Services this module consumes from other modules</small>
+          <div id="services-consumed-checklist" style="max-height: 200px; overflow-y: auto; border: 1px solid #c8c6c4; border-radius: 4px; padding: 8px; background: white;">
+            <!-- Service checkboxes will be inserted here -->
+          </div>
+          <small style="color: #605e5c; font-size: 11px; margin-top: 4px; display: block;">Select services this module consumes from other modules</small>
         </div>
         <div class="form-group">
           <label for="test-date" class="form-label">
@@ -1018,16 +1022,13 @@ function renderWorkflowSnippetFields(snippetType) {
           <label class="form-label">
             <span class="label-icon">🧪</span>
             Test Results
+            <span id="test-filter-info" style="color: #605e5c; font-size: 11px; font-weight: normal; margin-left: 8px;"></span>
           </label>
-          <div style="margin-bottom: 8px;">
-            <button type="button" id="generate-tests-btn" class="btn btn-secondary btn-full" style="margin-bottom: 8px;">
-              <span class="btn-icon">⚡</span>
-              <span>Generate Tests from Package & Services</span>
-            </button>
-            <small style="color: #605e5c; font-size: 11px; display: block; text-align: center;">Auto-generate tests based on package type and services</small>
-          </div>
-          <div id="workflow-test-results" class="tests-container" style="margin-bottom: 10px;">
-            <!-- Test results will be added here -->
+          <div id="workflow-test-results" class="tests-container" style="margin-bottom: 10px; max-height: 400px; overflow-y: auto;">
+            <!-- Test results will be filtered and shown here based on package and services -->
+            <div style="padding: 20px; text-align: center; color: #605e5c;">
+              <p>Select package type and services to see relevant tests</p>
+            </div>
           </div>
           <button type="button" id="add-workflow-test-btn" class="btn btn-secondary btn-full" style="margin-bottom: 10px;">
             <span class="btn-icon">➕</span>
@@ -1043,20 +1044,15 @@ function renderWorkflowSnippetFields(snippetType) {
         </div>
       `;
       
-      // Add event listeners
+      // Populate service checklists and add event listeners
       setTimeout(() => {
+        populateServiceChecklists();
+        setupTestFiltering();
+        
         const addTestBtn = document.getElementById("add-workflow-test-btn");
         if (addTestBtn) {
           addTestBtn.addEventListener("click", addWorkflowTestResult);
         }
-        
-        const generateTestsBtn = document.getElementById("generate-tests-btn");
-        if (generateTestsBtn) {
-          generateTestsBtn.addEventListener("click", generateTestsFromPackage);
-        }
-        
-        // Add initial test result row
-        addWorkflowTestResult();
       }, 100);
       break;
   }
@@ -1248,126 +1244,273 @@ function addWorkflowTestResult() {
   });
 }
 
-function generateTestsFromPackage() {
-  const packageType = document.getElementById("test-package-type")?.value;
-  const specification = document.getElementById("test-specification")?.value?.trim() || "";
-  const servicesProvided = document.getElementById("test-services-provided")?.value?.trim() || "";
-  const servicesConsumed = document.getElementById("test-services-consumed")?.value?.trim() || "";
+function populateServiceChecklists() {
+  const providedContainer = document.getElementById("services-provided-checklist");
+  const consumedContainer = document.getElementById("services-consumed-checklist");
   
-  if (!packageType) {
-    showMessage("Please select a package type first", "warning");
-    return;
+  if (!providedContainer || !consumedContainer) return;
+  
+  // Get services from test templates (or use default list)
+  const services = window.ITXPT_TEST_TEMPLATES?.SERVICES || {
+    "Time Service": { code: "S02P02", spec: "S02P02-Time", description: "Time synchronization service" },
+    "Location Service": { code: "S02P03", spec: "S02P03-Location", description: "Location/GPS service" },
+    "Vehicle Service": { code: "S02P04", spec: "S02P04-Vehicle", description: "Vehicle information service" },
+    "Journey Service": { code: "S02P05", spec: "S02P05-Journey", description: "Journey planning service" },
+    "Stop Point Service": { code: "S02P06", spec: "S02P06-StopPoint", description: "Stop point information" },
+    "Line Service": { code: "S02P07", spec: "S02P07-Line", description: "Line/route information" },
+    "Destination Service": { code: "S02P08", spec: "S02P08-Destination", description: "Destination display service" },
+    "Occupancy Service": { code: "S02P09", spec: "S02P09-Occupancy", description: "Occupancy monitoring" },
+    "Door Service": { code: "S02P10", spec: "S02P10-Door", description: "Door control service" },
+    "Emergency Service": { code: "S02P11", spec: "S02P11-Emergency", description: "Emergency communication" },
+    "Audio Service": { code: "S02P12", spec: "S02P12-Audio", description: "Audio announcement service" },
+    "Video Service": { code: "S02P13", spec: "S02P13-Video", description: "Video display service" },
+    "WiFi Service": { code: "S02P14", spec: "S02P14-WiFi", description: "WiFi connectivity service" },
+    "Diagnostic Service": { code: "S02P15", spec: "S02P15-Diagnostic", description: "Diagnostic and monitoring" }
+  };
+  
+  // Create checkboxes for provided services
+  let providedHTML = '';
+  Object.keys(services).forEach(serviceName => {
+    const service = services[serviceName];
+    const checkboxId = `service-prov-${service.code}`;
+    providedHTML += `
+      <label style="display: flex; align-items: center; padding: 6px; cursor: pointer; border-radius: 4px; margin-bottom: 4px;" 
+             onmouseover="this.style.background='#f3f2f1'" onmouseout="this.style.background='transparent'">
+        <input type="checkbox" id="${checkboxId}" class="service-provided-checkbox" value="${escapeHtml(serviceName)}" 
+               style="margin-right: 8px; cursor: pointer;" />
+        <div style="flex: 1;">
+          <div style="font-weight: 500; font-size: 13px;">${escapeHtml(serviceName)}</div>
+          <div style="font-size: 11px; color: #605e5c;">${escapeHtml(service.spec)} - ${escapeHtml(service.description)}</div>
+        </div>
+      </label>
+    `;
+  });
+  providedContainer.innerHTML = providedHTML;
+  
+  // Create checkboxes for consumed services
+  let consumedHTML = '';
+  Object.keys(services).forEach(serviceName => {
+    const service = services[serviceName];
+    const checkboxId = `service-cons-${service.code}`;
+    consumedHTML += `
+      <label style="display: flex; align-items: center; padding: 6px; cursor: pointer; border-radius: 4px; margin-bottom: 4px;" 
+             onmouseover="this.style.background='#f3f2f1'" onmouseout="this.style.background='transparent'">
+        <input type="checkbox" id="${checkboxId}" class="service-consumed-checkbox" value="${escapeHtml(serviceName)}" 
+               style="margin-right: 8px; cursor: pointer;" />
+        <div style="flex: 1;">
+          <div style="font-weight: 500; font-size: 13px;">${escapeHtml(serviceName)}</div>
+          <div style="font-size: 11px; color: #605e5c;">${escapeHtml(service.spec)} - ${escapeHtml(service.description)}</div>
+        </div>
+      </label>
+    `;
+  });
+  consumedContainer.innerHTML = consumedHTML;
+}
+
+function setupTestFiltering() {
+  const packageSelect = document.getElementById("test-package-type");
+  const providedCheckboxes = document.querySelectorAll(".service-provided-checkbox");
+  const consumedCheckboxes = document.querySelectorAll(".service-consumed-checkbox");
+  
+  // Filter tests when package or services change
+  const filterTests = () => {
+    const packageType = packageSelect?.value;
+    if (!packageType) {
+      const container = document.getElementById("workflow-test-results");
+      if (container) {
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #605e5c;"><p>Select package type to see relevant tests</p></div>';
+      }
+      return;
+    }
+    
+    // Get selected services
+    const servicesProvided = Array.from(providedCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    const servicesConsumed = Array.from(consumedCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    // Get filtered tests from templates
+    let tests = [];
+    if (window.ITXPT_TEST_TEMPLATES && window.ITXPT_TEST_TEMPLATES.getFilteredTests) {
+      tests = window.ITXPT_TEST_TEMPLATES.getFilteredTests(packageType, servicesProvided, servicesConsumed);
+    } else {
+      // Fallback if templates not loaded
+      tests = getFallbackTests(packageType, servicesProvided, servicesConsumed);
+    }
+    
+    // Update test display
+    displayFilteredTests(tests);
+    
+    // Update info text
+    const infoEl = document.getElementById("test-filter-info");
+    if (infoEl) {
+      infoEl.textContent = `Showing ${tests.length} relevant test${tests.length !== 1 ? 's' : ''}`;
+    }
+  };
+  
+  // Add event listeners
+  if (packageSelect) {
+    packageSelect.addEventListener("change", filterTests);
   }
   
+  providedCheckboxes.forEach(cb => {
+    cb.addEventListener("change", filterTests);
+  });
+  
+  consumedCheckboxes.forEach(cb => {
+    cb.addEventListener("change", filterTests);
+  });
+  
+  // Initial filter
+  filterTests();
+}
+
+function getFallbackTests(packageType, servicesProvided, servicesConsumed) {
+  // Fallback test list if templates not loaded
+  let tests = [
+    { id: "base-001", name: "Module Identification", description: "Verify module identification and basic connectivity", category: "base" },
+    { id: "base-002", name: "Network Configuration", description: "Test network setup and IP configuration", category: "base" },
+    { id: "base-003", name: "DHCP Configuration", description: "Verify DHCP assignment and network addressing", category: "base" }
+  ];
+  
+  if (packageType === "sequoia") {
+    tests.push(
+      { id: "seq-001", name: "Sequoia Package Compliance", description: "Verify compliance with Sequoia package requirements", category: "package" },
+      { id: "seq-002", name: "Sequoia Core Services", description: "Test core Sequoia package services", category: "package" }
+    );
+  } else if (packageType === "linden") {
+    tests.push(
+      { id: "lind-001", name: "Linden Package Compliance", description: "Verify compliance with Linden package requirements", category: "package" },
+      { id: "lind-002", name: "Linden Core Services", description: "Test core Linden package services", category: "package" }
+    );
+  }
+  
+  // Add service-specific tests
+  servicesProvided.forEach(serviceName => {
+    tests.push({
+      id: `prov-${serviceName}`,
+      name: `${serviceName} - Service Provider`,
+      description: `Test ${serviceName} service provision and compliance`,
+      category: "service-provider",
+      service: serviceName
+    });
+  });
+  
+  servicesConsumed.forEach(serviceName => {
+    tests.push({
+      id: `cons-${serviceName}`,
+      name: `${serviceName} - Service Consumer`,
+      description: `Test ${serviceName} service consumption and integration`,
+      category: "service-consumer",
+      service: serviceName
+    });
+  });
+  
+  return tests;
+}
+
+function displayFilteredTests(tests) {
   const container = document.getElementById("workflow-test-results");
   if (!container) return;
   
   // Clear existing tests
   container.innerHTML = "";
   
-  // Base tests for all packages
-  const baseTests = [
-    { name: "Module Identification", description: "Verify module identification and basic connectivity" },
-    { name: "Network Configuration", description: "Test network setup and IP configuration" },
-    { name: "Package Compliance", description: `Verify compliance with ${packageType === "sequoia" ? "Sequoia" : "Linden"} package requirements` }
-  ];
-  
-  // Package-specific tests
-  const packageTests = {
-    sequoia: [
-      { name: "Sequoia Core Services", description: "Test core Sequoia package services" },
-      { name: "Sequoia Data Exchange", description: "Verify data exchange protocols" }
-    ],
-    linden: [
-      { name: "Linden Core Services", description: "Test core Linden package services" },
-      { name: "Linden Data Exchange", description: "Verify data exchange protocols" }
-    ]
-  };
-  
-  // Service-specific tests
-  const serviceTests = [];
-  const providedServices = servicesProvided.split('\n').filter(s => s.trim());
-  const consumedServices = servicesConsumed.split('\n').filter(s => s.trim());
-  
-  providedServices.forEach(service => {
-    const serviceName = service.trim();
-    if (serviceName) {
-      serviceTests.push({
-        name: `Service Provider: ${serviceName}`,
-        description: `Test ${serviceName} service provision and compliance with specification requirements`
-      });
-    }
-  });
-  
-  consumedServices.forEach(service => {
-    const serviceName = service.trim();
-    if (serviceName) {
-      serviceTests.push({
-        name: `Service Consumer: ${serviceName}`,
-        description: `Test ${serviceName} service consumption and integration`
-      });
-    }
-  });
-  
-  // Specification-specific tests
-  if (specification) {
-    serviceTests.push({
-      name: `Specification Compliance: ${specification}`,
-      description: `Verify compliance with ${specification} specification requirements`
-    });
+  if (tests.length === 0) {
+    container.innerHTML = '<div style="padding: 20px; text-align: center; color: #605e5c;"><p>No tests match your selection. Select services to see relevant tests.</p></div>';
+    return;
   }
   
-  // Combine all tests
-  const allTests = [...baseTests, ...packageTests[packageType], ...serviceTests];
+  // Group tests by category
+  const groupedTests = {
+    base: [],
+    package: [],
+    "service-provider": [],
+    "service-consumer": []
+  };
   
-  // Add tests to container
-  allTests.forEach((test, index) => {
-    const testDiv = document.createElement("div");
-    testDiv.className = "test-row";
-    testDiv.style.marginBottom = "10px";
-    testDiv.style.padding = "10px";
-    testDiv.style.background = "#f8f9fa";
-    testDiv.style.borderRadius = "4px";
-    testDiv.style.border = "1px solid #c8c6c4";
-    
-    testDiv.innerHTML = `
-      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center;">
-        <div>
-          <input type="text" class="form-input workflow-test-name" value="${escapeHtml(test.name)}" style="margin: 0; font-weight: 600;" />
-          <small style="color: #605e5c; font-size: 10px; display: block; margin-top: 2px;">${escapeHtml(test.description)}</small>
-        </div>
-        <select class="form-select workflow-test-status" style="margin: 0;">
-          <option value="not-tested">○ Not Tested</option>
-          <option value="in-progress">⟳ In Progress</option>
-          <option value="passed">✓ Passed</option>
-          <option value="failed">✗ Failed</option>
-          <option value="warning">⚠ Warning</option>
-        </select>
-        <input type="text" class="form-input workflow-test-notes" placeholder="Notes/errors" style="margin: 0;" />
-        <button type="button" class="remove-workflow-test-btn" style="padding: 6px 10px; background: #d13438; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-      </div>
-    `;
-    
-    container.appendChild(testDiv);
-    
-    // Add remove button listener
-    const removeBtn = testDiv.querySelector(".remove-workflow-test-btn");
-    if (removeBtn) {
-      removeBtn.addEventListener("click", () => {
-        testDiv.remove();
-      });
+  tests.forEach(test => {
+    const category = test.category || "base";
+    if (groupedTests[category]) {
+      groupedTests[category].push(test);
+    } else {
+      groupedTests.base.push(test);
     }
   });
   
-  showMessage(`Generated ${allTests.length} tests based on ${packageType === "sequoia" ? "Sequoia" : "Linden"} package and selected services`, "success");
+  // Display tests grouped by category
+  Object.keys(groupedTests).forEach(category => {
+    const categoryTests = groupedTests[category];
+    if (categoryTests.length === 0) return;
+    
+    // Add category header
+    const categoryNames = {
+      base: "Base Tests",
+      package: "Package Tests",
+      "service-provider": "Service Provider Tests",
+      "service-consumer": "Service Consumer Tests"
+    };
+    
+    const categoryHeader = document.createElement("div");
+    categoryHeader.style.cssText = "font-weight: 600; color: #0078d4; margin-top: 12px; margin-bottom: 8px; padding: 8px; background: #e8f4f8; border-radius: 4px; font-size: 13px;";
+    categoryHeader.textContent = categoryNames[category] || category;
+    container.appendChild(categoryHeader);
+    
+    // Add tests in this category
+    categoryTests.forEach(test => {
+      const testDiv = document.createElement("div");
+      testDiv.className = "test-row";
+      testDiv.dataset.testId = test.id;
+      testDiv.style.marginBottom = "10px";
+      testDiv.style.padding = "10px";
+      testDiv.style.background = "#f8f9fa";
+      testDiv.style.borderRadius = "4px";
+      testDiv.style.border = "1px solid #c8c6c4";
+      
+      testDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center;">
+          <div>
+            <input type="text" class="form-input workflow-test-name" value="${escapeHtml(test.name)}" style="margin: 0; font-weight: 600;" readonly />
+            <small style="color: #605e5c; font-size: 10px; display: block; margin-top: 2px;">${escapeHtml(test.description)}</small>
+            ${test.specification ? `<small style="color: #0078d4; font-size: 9px; display: block; margin-top: 2px;">Spec: ${escapeHtml(test.specification)}</small>` : ''}
+          </div>
+          <select class="form-select workflow-test-status" style="margin: 0;">
+            <option value="not-tested">○ Not Tested</option>
+            <option value="in-progress">⟳ In Progress</option>
+            <option value="passed">✓ Passed</option>
+            <option value="failed">✗ Failed</option>
+            <option value="warning">⚠ Warning</option>
+          </select>
+          <input type="text" class="form-input workflow-test-notes" placeholder="Notes/errors" style="margin: 0;" />
+          <button type="button" class="remove-workflow-test-btn" style="padding: 6px 10px; background: #d13438; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+        </div>
+      `;
+      
+      container.appendChild(testDiv);
+      
+      // Add remove button listener
+      const removeBtn = testDiv.querySelector(".remove-workflow-test-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          testDiv.remove();
+        });
+      }
+    });
+  });
 }
 
 function generateTestResultsReportSnippet() {
   const moduleName = document.getElementById("test-module-name")?.value || "[Module Name]";
   const packageType = document.getElementById("test-package-type")?.value || "";
   const specification = document.getElementById("test-specification")?.value?.trim() || "";
-  const servicesProvided = document.getElementById("test-services-provided")?.value?.trim() || "";
-  const servicesConsumed = document.getElementById("test-services-consumed")?.value?.trim() || "";
+  // Get selected services from checkboxes
+  const servicesProvided = Array.from(document.querySelectorAll(".service-provided-checkbox:checked"))
+    .map(cb => cb.value);
+  const servicesConsumed = Array.from(document.querySelectorAll(".service-consumed-checkbox:checked"))
+    .map(cb => cb.value);
   const testDate = document.getElementById("test-date")?.value || "";
   const testerName = document.getElementById("tester-name")?.value || "[Tester Name]";
   const testNotes = document.getElementById("test-notes")?.value || "";
@@ -1411,8 +1554,8 @@ ${packageType ? `<p style="margin: 5px 0;"><strong>Package:</strong> ${packageTy
 ${specification ? `<p style="margin: 5px 0;"><strong>Specification:</strong> ${escapeHtml(specification)}</p>` : ''}
 ${dateText ? `<p style="margin: 5px 0;"><strong>Test Date:</strong> ${dateText}</p>` : ''}
 <p style="margin: 5px 0;"><strong>Tester:</strong> ${escapeHtml(testerName)}</p>
-${servicesProvided ? `<p style="margin: 5px 0;"><strong>Services Provided:</strong> ${escapeHtml(servicesProvided.split('\n').filter(s => s.trim()).join(', '))}</p>` : ''}
-${servicesConsumed ? `<p style="margin: 5px 0;"><strong>Services Consumed:</strong> ${escapeHtml(servicesConsumed.split('\n').filter(s => s.trim()).join(', '))}</p>` : ''}
+${servicesProvided && servicesProvided.length > 0 ? `<p style="margin: 5px 0;"><strong>Services Provided:</strong> ${escapeHtml(servicesProvided.join(', '))}</p>` : ''}
+${servicesConsumed && servicesConsumed.length > 0 ? `<p style="margin: 5px 0;"><strong>Services Consumed:</strong> ${escapeHtml(servicesConsumed.join(', '))}</p>` : ''}
 </div>
 
 <h3 style="color: #0078d4; margin-top: 20px;">Test Summary</h3>
