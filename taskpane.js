@@ -1030,10 +1030,6 @@ function renderWorkflowSnippetFields(snippetType) {
               <p>Select package type and services to see relevant tests</p>
             </div>
           </div>
-          <button type="button" id="add-workflow-test-btn" class="btn btn-secondary btn-full" style="margin-bottom: 10px;">
-            <span class="btn-icon">➕</span>
-            <span>Add Custom Test</span>
-          </button>
         </div>
         <div class="form-group">
           <label for="test-notes" class="form-label">
@@ -1048,11 +1044,6 @@ function renderWorkflowSnippetFields(snippetType) {
       setTimeout(() => {
         populateServiceChecklists();
         setupTestFiltering();
-        
-        const addTestBtn = document.getElementById("add-workflow-test-btn");
-        if (addTestBtn) {
-          addTestBtn.addEventListener("click", addWorkflowTestResult);
-        }
       }, 100);
       break;
   }
@@ -1208,41 +1199,6 @@ ${optionalFields}
   `.trim();
 }
 
-function addWorkflowTestResult() {
-  const container = document.getElementById("workflow-test-results");
-  if (!container) return;
-  
-  const testDiv = document.createElement("div");
-  testDiv.className = "test-row";
-  testDiv.style.marginBottom = "10px";
-  testDiv.style.padding = "10px";
-  testDiv.style.background = "#f8f9fa";
-  testDiv.style.borderRadius = "4px";
-  testDiv.style.border = "1px solid #c8c6c4";
-  
-  const testId = Date.now() + Math.random();
-  testDiv.innerHTML = `
-    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center;">
-      <input type="text" class="form-input workflow-test-name" placeholder="Test name/description" style="margin: 0;" />
-      <select class="form-select workflow-test-status" style="margin: 0;">
-        <option value="passed">✓ Passed</option>
-        <option value="failed">✗ Failed</option>
-        <option value="warning">⚠ Warning</option>
-        <option value="not-tested">○ Not Tested</option>
-      </select>
-      <input type="text" class="form-input workflow-test-notes" placeholder="Notes/errors" style="margin: 0;" />
-      <button type="button" class="remove-workflow-test-btn" style="padding: 6px 10px; background: #d13438; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-    </div>
-  `;
-  
-  container.appendChild(testDiv);
-  
-  // Add remove button listener
-  const removeBtn = testDiv.querySelector(".remove-workflow-test-btn");
-  removeBtn.addEventListener("click", () => {
-    testDiv.remove();
-  });
-}
 
 function populateServiceChecklists() {
   const providedContainer = document.getElementById("services-provided-checklist");
@@ -1250,22 +1206,17 @@ function populateServiceChecklists() {
   
   if (!providedContainer || !consumedContainer) return;
   
-  // Get services from test templates (or use default list)
+  // Get services from test templates (matching Excel file structure)
   const services = window.ITXPT_TEST_TEMPLATES?.SERVICES || {
+    "Module Inventory Service": { code: "S02P01", spec: "S02P01-Inventory", description: "Module inventory and identification service" },
     "Time Service": { code: "S02P02", spec: "S02P02-Time", description: "Time synchronization service" },
-    "Location Service": { code: "S02P03", spec: "S02P03-Location", description: "Location/GPS service" },
-    "Vehicle Service": { code: "S02P04", spec: "S02P04-Vehicle", description: "Vehicle information service" },
-    "Journey Service": { code: "S02P05", spec: "S02P05-Journey", description: "Journey planning service" },
-    "Stop Point Service": { code: "S02P06", spec: "S02P06-StopPoint", description: "Stop point information" },
-    "Line Service": { code: "S02P07", spec: "S02P07-Line", description: "Line/route information" },
-    "Destination Service": { code: "S02P08", spec: "S02P08-Destination", description: "Destination display service" },
-    "Occupancy Service": { code: "S02P09", spec: "S02P09-Occupancy", description: "Occupancy monitoring" },
-    "Door Service": { code: "S02P10", spec: "S02P10-Door", description: "Door control service" },
-    "Emergency Service": { code: "S02P11", spec: "S02P11-Emergency", description: "Emergency communication" },
-    "Audio Service": { code: "S02P12", spec: "S02P12-Audio", description: "Audio announcement service" },
-    "Video Service": { code: "S02P13", spec: "S02P13-Video", description: "Video display service" },
-    "WiFi Service": { code: "S02P14", spec: "S02P14-WiFi", description: "WiFi connectivity service" },
-    "Diagnostic Service": { code: "S02P15", spec: "S02P15-Diagnostic", description: "Diagnostic and monitoring" }
+    "GNSS Location Service": { code: "S02P03", spec: "S02P03-GNSS", description: "GNSS location/GPS service" },
+    "FMStoIP Service": { code: "S02P04", spec: "S02P04-FMStoIP", description: "FMS to IP conversion service" },
+    "VEHICLEtoIP Service": { code: "S02P05", spec: "S02P05-VEHICLEtoIP", description: "Vehicle information to IP service" },
+    "AVMS Service": { code: "S02P06", spec: "S02P06-AVMS", description: "Automatic Vehicle Monitoring System service" },
+    "APC Service": { code: "S02P07", spec: "S02P07-APC", description: "Automatic Passenger Counting service" },
+    "MADT Service": { code: "S02P08", spec: "S02P08-MADT", description: "Mobile Application Development Toolkit service" },
+    "MQTT broker Service": { code: "S02P09", spec: "S02P09-MQTT", description: "MQTT message broker service" }
   };
   
   // Create checkboxes for provided services
@@ -1307,10 +1258,49 @@ function populateServiceChecklists() {
   consumedContainer.innerHTML = consumedHTML;
 }
 
+// Store test results by test ID
+let testResultsStorage = {};
+
+// Load test results from localStorage
+function loadTestResults() {
+  try {
+    const saved = localStorage.getItem('itxpt_test_results');
+    if (saved) {
+      testResultsStorage = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.warn("Could not load test results:", e);
+    testResultsStorage = {};
+  }
+}
+
+// Save test results to localStorage
+function saveTestResults() {
+  try {
+    localStorage.setItem('itxpt_test_results', JSON.stringify(testResultsStorage));
+  } catch (e) {
+    console.warn("Could not save test results:", e);
+  }
+}
+
+// Get test result for a specific test ID
+function getTestResult(testId) {
+  return testResultsStorage[testId] || { status: "not-tested", notes: "" };
+}
+
+// Set test result for a specific test ID
+function setTestResult(testId, status, notes = "") {
+  testResultsStorage[testId] = { status, notes };
+  saveTestResults();
+}
+
 function setupTestFiltering() {
   const packageSelect = document.getElementById("test-package-type");
   const providedCheckboxes = document.querySelectorAll(".service-provided-checkbox");
   const consumedCheckboxes = document.querySelectorAll(".service-consumed-checkbox");
+  
+  // Load existing test results
+  loadTestResults();
   
   // Filter tests when package or services change
   const filterTests = () => {
@@ -1441,65 +1431,168 @@ function displayFilteredTests(tests) {
     }
   });
   
+  // Create table structure
+  const tableWrapper = document.createElement("div");
+  tableWrapper.className = "test-results-table-wrapper";
+  tableWrapper.style.cssText = "overflow-x: auto; margin-top: 8px;";
+  
+  const table = document.createElement("table");
+  table.className = "test-results-table";
+  table.style.cssText = "width: 100%; border-collapse: collapse; background: white; border-radius: 4px; overflow: hidden;";
+  
+  // Table header
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr style="background: #f3f2f1; border-bottom: 2px solid #c8c6c4;">
+      <th style="text-align: left; padding: 12px; font-weight: 600; color: #323130; font-size: 13px;">Test</th>
+      <th style="text-align: center; padding: 12px; font-weight: 600; color: #323130; font-size: 13px; width: 180px;">Result</th>
+      <th style="text-align: left; padding: 12px; font-weight: 600; color: #323130; font-size: 13px;">Notes</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+  
+  // Table body
+  const tbody = document.createElement("tbody");
+  
   // Display tests grouped by category
   Object.keys(groupedTests).forEach(category => {
     const categoryTests = groupedTests[category];
     if (categoryTests.length === 0) return;
     
-    // Add category header
+    // Add category row
+    const categoryRow = document.createElement("tr");
+    categoryRow.style.cssText = "background: #e8f4f8;";
     const categoryNames = {
       base: "Base Tests",
       package: "Package Tests",
       "service-provider": "Service Provider Tests",
       "service-consumer": "Service Consumer Tests"
     };
-    
-    const categoryHeader = document.createElement("div");
-    categoryHeader.style.cssText = "font-weight: 600; color: #0078d4; margin-top: 12px; margin-bottom: 8px; padding: 8px; background: #e8f4f8; border-radius: 4px; font-size: 13px;";
-    categoryHeader.textContent = categoryNames[category] || category;
-    container.appendChild(categoryHeader);
+    categoryRow.innerHTML = `
+      <td colspan="3" style="padding: 10px 12px; font-weight: 600; color: #0078d4; font-size: 13px; border-bottom: 1px solid #c8c6c4;">
+        ${categoryNames[category] || category}
+      </td>
+    `;
+    tbody.appendChild(categoryRow);
     
     // Add tests in this category
     categoryTests.forEach(test => {
-      const testDiv = document.createElement("div");
-      testDiv.className = "test-row";
-      testDiv.dataset.testId = test.id;
-      testDiv.style.marginBottom = "10px";
-      testDiv.style.padding = "10px";
-      testDiv.style.background = "#f8f9fa";
-      testDiv.style.borderRadius = "4px";
-      testDiv.style.border = "1px solid #c8c6c4";
+      const testResult = getTestResult(test.id);
+      const row = document.createElement("tr");
+      row.className = "test-result-row";
+      row.dataset.testId = test.id;
+      row.style.cssText = "border-bottom: 1px solid #edebe9; transition: background-color 0.2s;";
       
-      testDiv.innerHTML = `
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center;">
-          <div>
-            <input type="text" class="form-input workflow-test-name" value="${escapeHtml(test.name)}" style="margin: 0; font-weight: 600;" readonly />
-            <small style="color: #605e5c; font-size: 10px; display: block; margin-top: 2px;">${escapeHtml(test.description)}</small>
-            ${test.specification ? `<small style="color: #0078d4; font-size: 9px; display: block; margin-top: 2px;">Spec: ${escapeHtml(test.specification)}</small>` : ''}
+      row.innerHTML = `
+        <td style="padding: 12px; vertical-align: top;">
+          <div style="font-weight: 600; color: #323130; font-size: 13px; margin-bottom: 4px;">${escapeHtml(test.name)}</div>
+          <div style="color: #605e5c; font-size: 11px; line-height: 1.4;">${escapeHtml(test.description)}</div>
+          ${test.specification ? `<div style="color: #0078d4; font-size: 10px; margin-top: 4px;">Spec: ${escapeHtml(test.specification)}</div>` : ''}
+        </td>
+        <td style="padding: 12px; text-align: center; vertical-align: middle;">
+          <div class="test-result-buttons" style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="test-result-btn test-pass-btn" data-test-id="${test.id}" data-status="passed" 
+                    style="padding: 8px 16px; background: ${testResult.status === 'passed' ? '#107c10' : '#e8f5e9'}; color: ${testResult.status === 'passed' ? 'white' : '#107c10'}; border: 2px solid #107c10; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s; min-width: 70px;">
+              ✓ Pass
+            </button>
+            <button type="button" class="test-result-btn test-fail-btn" data-test-id="${test.id}" data-status="failed"
+                    style="padding: 8px 16px; background: ${testResult.status === 'failed' ? '#d13438' : '#fff5f5'}; color: ${testResult.status === 'failed' ? 'white' : '#d13438'}; border: 2px solid #d13438; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s; min-width: 70px;">
+              ✗ Fail
+            </button>
+            <button type="button" class="test-result-btn test-clear-btn" data-test-id="${test.id}" data-status="not-tested"
+                    style="padding: 8px 12px; background: ${testResult.status === 'not-tested' ? '#f3f2f1' : 'white'}; color: #605e5c; border: 1px solid #c8c6c4; border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s;"
+                    title="Clear result">
+              ○
+            </button>
           </div>
-          <select class="form-select workflow-test-status" style="margin: 0;">
-            <option value="not-tested">○ Not Tested</option>
-            <option value="in-progress">⟳ In Progress</option>
-            <option value="passed">✓ Passed</option>
-            <option value="failed">✗ Failed</option>
-            <option value="warning">⚠ Warning</option>
-          </select>
-          <input type="text" class="form-input workflow-test-notes" placeholder="Notes/errors" style="margin: 0;" />
-          <button type="button" class="remove-workflow-test-btn" style="padding: 6px 10px; background: #d13438; color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-        </div>
+        </td>
+        <td style="padding: 12px; vertical-align: middle;">
+          <input type="text" class="test-result-notes" data-test-id="${test.id}" 
+                 value="${escapeHtml(testResult.notes || '')}" 
+                 placeholder="Add notes or errors..." 
+                 style="width: 100%; padding: 8px; border: 1px solid #c8c6c4; border-radius: 4px; font-size: 12px; box-sizing: border-box;" />
+        </td>
       `;
       
-      container.appendChild(testDiv);
+      tbody.appendChild(row);
       
-      // Add remove button listener
-      const removeBtn = testDiv.querySelector(".remove-workflow-test-btn");
-      if (removeBtn) {
-        removeBtn.addEventListener("click", () => {
-          testDiv.remove();
+      // Add hover effect
+      row.addEventListener("mouseenter", () => {
+        row.style.backgroundColor = "#fafafa";
+      });
+      row.addEventListener("mouseleave", () => {
+        row.style.backgroundColor = "transparent";
+      });
+      
+      // Add button event listeners
+      const passBtn = row.querySelector(".test-pass-btn");
+      const failBtn = row.querySelector(".test-fail-btn");
+      const clearBtn = row.querySelector(".test-clear-btn");
+      const notesInput = row.querySelector(".test-result-notes");
+      
+      const updateButtonStates = (selectedStatus) => {
+        const buttons = [passBtn, failBtn, clearBtn];
+        buttons.forEach(btn => {
+          const status = btn.dataset.status;
+          if (status === selectedStatus) {
+            if (status === 'passed') {
+              btn.style.background = '#107c10';
+              btn.style.color = 'white';
+            } else if (status === 'failed') {
+              btn.style.background = '#d13438';
+              btn.style.color = 'white';
+            } else {
+              btn.style.background = '#f3f2f1';
+              btn.style.color = '#605e5c';
+            }
+          } else {
+            if (status === 'passed') {
+              btn.style.background = '#e8f5e9';
+              btn.style.color = '#107c10';
+            } else if (status === 'failed') {
+              btn.style.background = '#fff5f5';
+              btn.style.color = '#d13438';
+            } else {
+              btn.style.background = 'white';
+              btn.style.color = '#605e5c';
+            }
+          }
         });
-      }
+      };
+      
+      passBtn.addEventListener("click", () => {
+        const notes = notesInput.value.trim();
+        setTestResult(test.id, "passed", notes);
+        updateButtonStates("passed");
+      });
+      
+      failBtn.addEventListener("click", () => {
+        const notes = notesInput.value.trim();
+        setTestResult(test.id, "failed", notes);
+        updateButtonStates("failed");
+      });
+      
+      clearBtn.addEventListener("click", () => {
+        setTestResult(test.id, "not-tested", "");
+        notesInput.value = "";
+        updateButtonStates("not-tested");
+      });
+      
+      notesInput.addEventListener("blur", () => {
+        const currentResult = getTestResult(test.id);
+        if (currentResult.status !== "not-tested") {
+          setTestResult(test.id, currentResult.status, notesInput.value.trim());
+        }
+      });
+      
+      // Initialize button states
+      updateButtonStates(testResult.status);
     });
   });
+  
+  table.appendChild(tbody);
+  tableWrapper.appendChild(table);
+  container.appendChild(tableWrapper);
 }
 
 function generateTestResultsReportSnippet() {
@@ -1515,16 +1608,17 @@ function generateTestResultsReportSnippet() {
   const testerName = document.getElementById("tester-name")?.value || "[Tester Name]";
   const testNotes = document.getElementById("test-notes")?.value || "";
   
-  // Collect test results
+  // Collect test results from the table
   const testResults = [];
-  const testRows = document.querySelectorAll("#workflow-test-results .test-row");
+  const testRows = document.querySelectorAll("#workflow-test-results .test-result-row");
   testRows.forEach((row) => {
-    const name = row.querySelector(".workflow-test-name")?.value.trim();
-    const status = row.querySelector(".workflow-test-status")?.value;
-    const notes = row.querySelector(".workflow-test-notes")?.value.trim();
+    const testId = row.dataset.testId;
+    const testName = row.querySelector("td:first-child div:first-child")?.textContent.trim();
+    const status = getTestResult(testId).status;
+    const notes = row.querySelector(".test-result-notes")?.value.trim() || getTestResult(testId).notes;
     
-    if (name) {
-      testResults.push({ name, status, notes });
+    if (testName && status !== "not-tested") {
+      testResults.push({ name: testName, status, notes });
     }
   });
   
