@@ -3,102 +3,189 @@
 let testCounter = 0;
 let savedPresets = [];
 
+// Add immediate console log to verify script is loading
+console.log("taskpane.js loaded");
+
+// Initialize when DOM is ready
+function initWhenReady() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    // DOM is already loaded
+    initializeApp();
+  }
+}
+
 Office.onReady((info) => {
+  console.log("Office.onReady called, host:", info.host);
   if (info.host === Office.HostType.Outlook) {
-    document.addEventListener("DOMContentLoaded", () => {
-      initializeApp();
-    });
+    initWhenReady();
+  } else {
+    console.warn("Not Outlook host, host type:", info.host);
+    // Still try to initialize for testing
+    initWhenReady();
   }
 });
 
+// Fallback: if Office.onReady doesn't fire, try after a delay
+setTimeout(() => {
+  if (typeof Office !== 'undefined' && Office.context) {
+    console.log("Office.js available, initializing...");
+    initWhenReady();
+  } else {
+    console.warn("Office.js not available after timeout");
+  }
+}, 1000);
+
 function initializeApp() {
-  // Load saved presets
-  loadPresets();
+  console.log("initializeApp() called");
+  console.log("Document ready state:", document.readyState);
   
-  // Workflow snippet type selector
-  const workflowSnippetType = document.getElementById("workflow-snippet-type");
-  if (workflowSnippetType) {
-    workflowSnippetType.addEventListener("change", (e) => {
-      console.log("Workflow snippet type changed to:", e.target.value);
-      handleWorkflowSnippetChange();
-    });
-  } else {
-    console.warn("Workflow snippet type selector not found");
-  }
-  
-  // Insert workflow snippet button
-  const insertWorkflowBtn = document.getElementById("insert-workflow-snippet-btn");
-  if (insertWorkflowBtn) {
-    insertWorkflowBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log("Insert workflow snippet button clicked");
-      
-      // Visual feedback
-      insertWorkflowBtn.style.opacity = "0.7";
-      insertWorkflowBtn.disabled = true;
-      insertWorkflowBtn.textContent = "Inserting...";
-      
-      setTimeout(() => {
-        insertWorkflowSnippet();
-        // Reset button after a moment
-        setTimeout(() => {
-          insertWorkflowBtn.style.opacity = "1";
-          insertWorkflowBtn.disabled = false;
-          insertWorkflowBtn.innerHTML = '<span class="btn-icon">📧</span><span>Insert Workflow Snippet</span>';
-        }, 1000);
-      }, 100);
-    });
-  } else {
-    console.warn("Insert workflow snippet button not found");
-  }
-  
-  // Add test button
-  document.getElementById("add-test-btn").addEventListener("click", addTestRow);
-  
-  // Insert template button
-  document.getElementById("insert-template-btn").addEventListener("click", insertTemplate);
-  
-  // Clear form button
-  document.getElementById("clear-form-btn").addEventListener("click", clearForm);
-  
-  // Preview button
-  document.getElementById("preview-btn").addEventListener("click", showPreview);
-  
-  // Modal controls
-  document.getElementById("close-preview").addEventListener("click", closePreview);
-  document.getElementById("insert-from-preview").addEventListener("click", () => {
-    closePreview();
-    insertTemplate();
-  });
-  
-  // Quick action buttons
-  document.getElementById("load-preset-btn").addEventListener("click", showPresetMenu);
-  document.getElementById("save-preset-btn").addEventListener("click", savePreset);
-  document.getElementById("auto-fill-btn").addEventListener("click", autoFillFromEmail);
-  
-  // Character counter for notes
-  const notesTextarea = document.getElementById("additional-notes");
-  notesTextarea.addEventListener("input", updateCharCount);
-  notesTextarea.addEventListener("input", autoSave);
-  
-  // Auto-save on input changes
-  const inputs = document.querySelectorAll("input, select, textarea");
-  inputs.forEach(input => {
-    if (input.id !== "additional-notes") {
-      input.addEventListener("change", autoSave);
+  try {
+    // Load saved presets
+    loadPresets();
+    
+    // Workflow snippet type selector
+    const workflowSnippetType = document.getElementById("workflow-snippet-type");
+    console.log("Workflow snippet type selector found:", !!workflowSnippetType);
+    if (workflowSnippetType) {
+      workflowSnippetType.addEventListener("change", (e) => {
+        console.log("Workflow snippet type changed to:", e.target.value);
+        handleWorkflowSnippetChange();
+      });
+    } else {
+      console.error("Workflow snippet type selector not found!");
     }
-  });
-  
-  // Load saved data
-  loadSavedData();
-  
-  // Add initial test row
-  addTestRow();
-  
-  // Update initial counts
-  updateTestCount();
-  updateCharCount();
+    
+    // Insert workflow snippet button
+    const insertWorkflowBtn = document.getElementById("insert-workflow-snippet-btn");
+    console.log("Insert workflow snippet button found:", !!insertWorkflowBtn);
+    if (insertWorkflowBtn) {
+      // Remove any existing listeners
+      const newBtn = insertWorkflowBtn.cloneNode(true);
+      insertWorkflowBtn.parentNode.replaceChild(newBtn, insertWorkflowBtn);
+      
+      newBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("Insert workflow snippet button clicked!");
+        alert("Button clicked! Check console for details.");
+        
+        // Visual feedback
+        this.style.opacity = "0.7";
+        this.disabled = true;
+        const originalHTML = this.innerHTML;
+        this.innerHTML = "Inserting...";
+        
+        setTimeout(() => {
+          insertWorkflowSnippet();
+          // Reset button after a moment
+          setTimeout(() => {
+            this.style.opacity = "1";
+            this.disabled = false;
+            this.innerHTML = originalHTML;
+          }, 1000);
+        }, 100);
+      });
+    } else {
+      console.error("Insert workflow snippet button not found!");
+    }
+    
+    // Add test button
+    const addTestBtn = document.getElementById("add-test-btn");
+    if (addTestBtn) {
+      addTestBtn.addEventListener("click", addTestRow);
+    } else {
+      console.warn("Add test button not found");
+    }
+    
+    // Insert template button
+    const insertTemplateBtn = document.getElementById("insert-template-btn");
+    if (insertTemplateBtn) {
+      insertTemplateBtn.addEventListener("click", insertTemplate);
+    } else {
+      console.warn("Insert template button not found");
+    }
+    
+    // Clear form button
+    const clearFormBtn = document.getElementById("clear-form-btn");
+    if (clearFormBtn) {
+      clearFormBtn.addEventListener("click", clearForm);
+    } else {
+      console.warn("Clear form button not found");
+    }
+    
+    // Preview button
+    const previewBtn = document.getElementById("preview-btn");
+    if (previewBtn) {
+      previewBtn.addEventListener("click", showPreview);
+    } else {
+      console.warn("Preview button not found");
+    }
+    
+    // Modal controls
+    const closePreviewBtn = document.getElementById("close-preview");
+    if (closePreviewBtn) {
+      closePreviewBtn.addEventListener("click", closePreview);
+    }
+    
+    const insertFromPreviewBtn = document.getElementById("insert-from-preview");
+    if (insertFromPreviewBtn) {
+      insertFromPreviewBtn.addEventListener("click", () => {
+        closePreview();
+        insertTemplate();
+      });
+    }
+    
+    // Quick action buttons
+    const loadPresetBtn = document.getElementById("load-preset-btn");
+    if (loadPresetBtn) {
+      loadPresetBtn.addEventListener("click", showPresetMenu);
+    }
+    
+    const savePresetBtn = document.getElementById("save-preset-btn");
+    if (savePresetBtn) {
+      savePresetBtn.addEventListener("click", savePreset);
+    }
+    
+    const autoFillBtn = document.getElementById("auto-fill-btn");
+    if (autoFillBtn) {
+      autoFillBtn.addEventListener("click", autoFillFromEmail);
+    }
+    
+    // Character counter for notes
+    const notesTextarea = document.getElementById("additional-notes");
+    if (notesTextarea) {
+      notesTextarea.addEventListener("input", updateCharCount);
+      notesTextarea.addEventListener("input", autoSave);
+    }
+    
+    // Auto-save on input changes
+    const inputs = document.querySelectorAll("input, select, textarea");
+    inputs.forEach(input => {
+      if (input.id !== "additional-notes") {
+        input.addEventListener("change", autoSave);
+      }
+    });
+    
+    // Load saved data
+    loadSavedData();
+    
+    // Add initial test row (only if tests section is visible)
+    const testsContainer = document.getElementById("tests-container");
+    if (testsContainer) {
+      addTestRow();
+    }
+    
+    // Update initial counts
+    updateTestCount();
+    updateCharCount();
+    
+    console.log("✅ All event listeners attached");
+  } catch (error) {
+    console.error("❌ Error in initializeApp:", error);
+    alert("Error initializing app: " + error.message);
+  }
 }
 
 function addTestRow() {
