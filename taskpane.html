@@ -14,78 +14,183 @@
 </head>
 <body class="ms-font-m ms-welcome ms-Fabric">
     <header class="ms-welcome__header ms-bgColor-neutralLighter ms-u-fadeIn500">
-        <div style="width: 90px; height: 90px; background-color: #0078d4; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
-            <span style="color: white; font-size: 36px; font-weight: bold;">ITXPT</span>
+        <div class="logo-container">
+            <span class="logo-text">ITXPT</span>
         </div>
-        <h1 class="ms-fontSize-su ms-fontWeight-light ms-fontColor-neutralPrimary">ITXPT Labeling Templates</h1>
+        <h1 class="header-title">ITXPT Labeling Templates</h1>
+        <p class="header-subtitle">Structured templates for labeling workflows</p>
     </header>
     <main id="app-body" class="ms-welcome__main ms-u-fadeIn500">
         <div class="container">
-            <!-- Deadline Section -->
-            <section class="section">
-                <h2 class="ms-fontSize-l ms-fontWeight-semibold">Deadline Information</h2>
-                <div class="form-group">
-                    <label for="deadline-date" class="ms-fontWeight-semibold">Labeling Deadline:</label>
-                    <input type="date" id="deadline-date" class="ms-TextField-field" />
+            <!-- Workflow Snippets Section -->
+            <section class="section workflow-snippets">
+                <div class="section-header">
+                    <span class="section-icon">📋</span>
+                    <h2 class="section-title">Workflow Snippets</h2>
                 </div>
                 <div class="form-group">
-                    <label for="deadline-time" class="ms-fontWeight-semibold">Tid:</label>
-                    <input type="time" id="deadline-time" class="ms-TextField-field" />
+                    <label for="workflow-snippet-type" class="form-label">
+                        <span class="label-icon">📧</span>
+                        Select Snippet Type
+                    </label>
+                    <select id="workflow-snippet-type" class="form-select">
+                        <option value="none">-- Select workflow snippet --</option>
+                        <option value="documentation-request">📄 Documentation Request</option>
+                        <option value="remote-session-setup">🖥️ Remote Session Setup</option>
+                        <option value="lab-shipping-instructions">📦 Lab Shipping Instructions</option>
+                        <option value="test-results-report">📊 Test Results Report</option>
+                        <option value="custom-template">✏️ Custom Template (Form Below)</option>
+                    </select>
+                </div>
+                <div id="workflow-snippet-fields" class="workflow-snippet-fields" style="display: none;">
+                    <!-- Dynamic fields will be inserted here based on snippet type -->
+                </div>
+                <button id="insert-workflow-snippet-btn" class="btn btn-primary btn-full" style="display: none;">
+                    <span class="btn-icon">📧</span>
+                    <span>Insert Workflow Snippet</span>
+                </button>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="section quick-actions">
+                <button id="load-preset-btn" class="quick-btn" title="Load template preset">
+                    <span class="icon">📋</span>
+                    <span>Presets</span>
+                </button>
+                <button id="save-preset-btn" class="quick-btn" title="Save current as preset">
+                    <span class="icon">💾</span>
+                    <span>Save</span>
+                </button>
+                <button id="auto-fill-btn" class="quick-btn" title="Auto-fill from email">
+                    <span class="icon">⚡</span>
+                    <span>Auto-fill</span>
+                </button>
+            </section>
+
+            <!-- Deadline Section (shown when custom-template is selected) -->
+            <section id="deadline-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <span class="section-icon">⏰</span>
+                    <h2 class="section-title">Deadline Information</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="deadline-date" class="form-label">
+                            <span class="label-icon">📅</span>
+                            Deadline Date
+                        </label>
+                        <input type="date" id="deadline-date" class="form-input" />
+                    </div>
+                    <div class="form-group form-group-half">
+                        <label for="deadline-time" class="form-label">
+                            <span class="label-icon">🕐</span>
+                            Time
+                        </label>
+                        <input type="time" id="deadline-time" class="form-input" />
+                    </div>
                 </div>
             </section>
 
-            <!-- Process Stage Section -->
-            <section class="section">
-                <h2 class="ms-fontSize-l ms-fontWeight-semibold">Processsteg</h2>
+            <!-- Custom Template Section (shown when custom-template is selected) -->
+            <section id="custom-template-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <span class="section-icon">📍</span>
+                    <h2 class="section-title">Process Step</h2>
+                </div>
                 <div class="form-group">
-                    <label for="process-stage" class="ms-fontWeight-semibold">Nuvarande steg:</label>
-                    <select id="process-stage" class="ms-Dropdown">
-                        <option value="">Välj steg...</option>
-                        <option value="planning">Planering</option>
-                        <option value="preparation">Förberedelse</option>
-                        <option value="testing">Testning pågår</option>
-                        <option value="review">Granskning</option>
-                        <option value="finalization">Finalisering</option>
-                        <option value="completed">Klart</option>
+                    <label for="process-stage" class="form-label">
+                        <span class="label-icon">🔄</span>
+                        Current Step
+                    </label>
+                    <select id="process-stage" class="form-select">
+                        <option value="">Select step...</option>
+                        <option value="planning">📋 Planering</option>
+                        <option value="preparation">🔧 Förberedelse</option>
+                        <option value="testing">🧪 Testning pågår</option>
+                        <option value="review">👀 Granskning</option>
+                        <option value="finalization">✅ Finalisering</option>
+                        <option value="completed">✓ Klart</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="planner-ticket" class="ms-fontWeight-semibold">Planner Ticket ID:</label>
-                    <input type="text" id="planner-ticket" class="ms-TextField-field" placeholder="t.ex. LAB-123" />
+                    <label for="planner-ticket" class="form-label">
+                        <span class="label-icon">🎫</span>
+                        Planner Ticket ID
+                    </label>
+                    <input type="text" id="planner-ticket" class="form-input" placeholder="e.g. LAB-123" />
                 </div>
             </section>
 
-            <!-- Tests Section -->
-            <section class="section">
-                <h2 class="ms-fontSize-l ms-fontWeight-semibold">Genomförda Tester</h2>
-                <div id="tests-container">
+            <!-- Tests Section (shown when custom-template is selected) -->
+            <section id="tests-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <span class="section-icon">🧪</span>
+                    <h2 class="section-title">Completed Tests</h2>
+                    <span id="test-count" class="badge">0</span>
+                </div>
+                <div id="tests-container" class="tests-container">
                     <!-- Tests will be added dynamically -->
                 </div>
-                <button id="add-test-btn" class="ms-Button ms-Button--primary">
-                    <span class="ms-Button-label">Lägg till test</span>
+                <button id="add-test-btn" class="btn btn-secondary btn-full">
+                    <span class="btn-icon">➕</span>
+                    <span>Add Test</span>
                 </button>
             </section>
 
-            <!-- Additional Notes -->
-            <section class="section">
-                <h2 class="ms-fontSize-l ms-fontWeight-semibold">Ytterligare information</h2>
+            <!-- Additional Notes (shown when custom-template is selected) -->
+            <section id="notes-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <span class="section-icon">📝</span>
+                    <h2 class="section-title">Additional Information</h2>
+                </div>
                 <div class="form-group">
-                    <label for="additional-notes" class="ms-fontWeight-semibold">Anteckningar:</label>
-                    <textarea id="additional-notes" class="ms-TextField-field" rows="3" placeholder="Lägg till ytterligare information om sessionen..."></textarea>
+                    <label for="additional-notes" class="form-label">
+                        <span class="label-icon">📄</span>
+                        Notes
+                    </label>
+                    <textarea id="additional-notes" class="form-textarea" rows="4" placeholder="Add additional information about the session..."></textarea>
+                    <div class="char-count">
+                        <span id="notes-char-count">0</span> / 500 characters
+                    </div>
                 </div>
             </section>
 
-            <!-- Action Buttons -->
-            <section class="section">
-                <button id="insert-template-btn" class="ms-Button ms-Button--primary ms-Button--hero">
-                    <span class="ms-Button-label">Infoga Template i Email</span>
+            <!-- Action Buttons (shown when custom-template is selected) -->
+            <section id="action-section" class="section action-section" style="display: none;">
+                <button id="insert-template-btn" class="btn btn-primary btn-full btn-large">
+                    <span class="btn-icon">📧</span>
+                    <span>Insert Template into Email</span>
                 </button>
-                <button id="clear-form-btn" class="ms-Button">
-                    <span class="ms-Button-label">Rensa formulär</span>
-                </button>
+                <div class="button-group">
+                    <button id="preview-btn" class="btn btn-outline btn-half">
+                        <span class="btn-icon">👁️</span>
+                        <span>Preview</span>
+                    </button>
+                    <button id="clear-form-btn" class="btn btn-outline btn-half">
+                        <span class="btn-icon">🗑️</span>
+                        <span>Clear</span>
+                    </button>
+                </div>
             </section>
         </div>
     </main>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Template Preview</h3>
+                <button class="modal-close" id="close-preview">&times;</button>
+            </div>
+            <div class="modal-body" id="preview-content">
+                <!-- Preview content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="insert-from-preview">Insert into Email</button>
+            </div>
+        </div>
+    </div>
+
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
     <script type="text/javascript" src="taskpane.js"></script>
 </body>
