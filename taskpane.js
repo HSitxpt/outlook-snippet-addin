@@ -31,8 +31,23 @@ function initializeApp() {
   if (insertWorkflowBtn) {
     insertWorkflowBtn.addEventListener("click", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       console.log("Insert workflow snippet button clicked");
-      insertWorkflowSnippet();
+      
+      // Visual feedback
+      insertWorkflowBtn.style.opacity = "0.7";
+      insertWorkflowBtn.disabled = true;
+      insertWorkflowBtn.textContent = "Inserting...";
+      
+      setTimeout(() => {
+        insertWorkflowSnippet();
+        // Reset button after a moment
+        setTimeout(() => {
+          insertWorkflowBtn.style.opacity = "1";
+          insertWorkflowBtn.disabled = false;
+          insertWorkflowBtn.innerHTML = '<span class="btn-icon">📧</span><span>Insert Workflow Snippet</span>';
+        }, 1000);
+      }, 100);
     });
   } else {
     console.warn("Insert workflow snippet button not found");
@@ -1113,22 +1128,13 @@ function insertWorkflowSnippet() {
                 showMessage("Workflow snippet inserted successfully!", "success");
               } else {
                 console.error("Error inserting snippet:", result.error);
-                // If setSelectedDataAsync fails, try appending
+                // If setSelectedDataAsync fails, provide helpful error message
                 if (result.error.code === 9020) { // No selection
-                  console.log("No selection, trying to append...");
-                  item.body.appendAsync(
-                    template,
-                    { coercionType: Office.CoercionType.Html },
-                    (appendResult) => {
-                      if (appendResult.status === Office.AsyncResultStatus.Succeeded) {
-                        showMessage("Workflow snippet inserted successfully!", "success");
-                      } else {
-                        showMessage("Error inserting snippet: " + (appendResult.error ? appendResult.error.message : "Unknown error"), "error");
-                      }
-                    }
-                  );
+                  console.log("No selection in email body");
+                  showMessage("Please click in the email body first, then try inserting again. Or select some text where you want to insert the snippet.", "warning");
                 } else {
-                  showMessage("Error inserting snippet: " + (result.error ? result.error.message : "Unknown error"), "error");
+                  console.error("Error code:", result.error.code, "Message:", result.error.message);
+                  showMessage("Error inserting snippet: " + (result.error ? result.error.message : "Unknown error") + ". Try clicking in the email body first.", "error");
                 }
               }
             };
